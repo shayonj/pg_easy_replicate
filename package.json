@@ -1,0 +1,13 @@
+{
+  "name": "pg-osc",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:shayonj/pg-osc.git",
+  "author": "Shayon Mukherjee <shayonj@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "@prettier/plugin-ruby": "^3.2.2",
+    "prettier": "^2.8.8"
+  }
+}

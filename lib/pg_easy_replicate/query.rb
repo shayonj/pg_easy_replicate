@@ -1,0 +1,41 @@
+# frozen_string_literal: true
+
+module PgEasyReplicate
+  class Query
+    extend Helper
+
+    class << self
+      def run(query:, connection_url:, reuse_trasaction: false)
+        conn = connect(connection_url)
+        conn.async_exec("BEGIN;")
+        if [PG::PQTRANS_INERROR, PG::PQTRANS_UNKNOWN].include?(
+             conn.transaction_status,
+           )
+          conn.cancel
+        end
+
+        logger.debug("Running query", { query: query })
+        result = conn.async_exec(query).to_a
+      rescue Exception # rubocop:disable Lint/RescueException
+        conn.cancel if conn.transaction_status != PG::PQTRANS_IDLE
+        conn.block
+        logger.error(
+          "Exception raised, rolling back query",
+          { rollback: true, query: query },
+        )
+        conn.async_exec("ROLLBACK;")
+        conn.async_exec("COMMIT;")
+        raise
+      else
+        conn.async_exec("COMMIT;") unless reuse_trasaction
+        result
+      end
+
+      def connect(connection_url)
+        c = PG.connect(connection_url)
+        logger.debug("Connection established")
+        c
+      end
+    end
+  end
+end

@@ -1,0 +1,73 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+
+concurrency:
+  group: branch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rspec:
+    runs-on: ubuntu-latest
+    name: Ruby ${{ matrix.ruby }} - PG 10 -> PG 15
+    strategy:
+      matrix:
+        ruby: ["2.7.7", "3.0.5", "3.1.3", "3.2.1"]
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Bundle install
+        env:
+          RAILS_ENV: test
+        run: |
+          gem install bundler
+          bundle install --jobs 4 --retry 3 --path vendor/bundle
+
+      - name: Run Lint
+        run: bundle exec rubocop
+        # - name: Setup upterm session
+        # uses: lhotari/action-upterm@v1
+      - name: "Setug PG databases"
+        run: |
+          set -euvxo pipefail
+
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/trusted.gpg.d/pgdg.asc &>/dev/null
+
+          sudo apt-get update
+
+          sudo apt-get install --yes --no-install-recommends postgresql-10 postgresql-client-10
+          sudo apt-get install --yes --no-install-recommends postgresql-15 postgresql-client-15
+
+          sudo systemctl restart postgresql@10-main.service
+          sudo systemctl restart postgresql@15-main.service
+          sudo systemctl restart postgresql
+
+          sudo su - postgres -c "createuser -p 5432 -d -s -e -l jamesbond"
+          sudo -u postgres psql -p 5432 -c "alter user jamesbond with encrypted password 'jamesbond';"
+
+          sudo su - postgres -c "createuser -p 5433 -d -s -e -l jamesbond"
+          sudo -u postgres psql -p 5433 -c "alter user jamesbond with encrypted password 'jamesbond';"
+
+          PGPASSWORD="jamesbond" psql -h localhost -d postgres -U jamesbond -p 5432 -c 'ALTER SYSTEM SET wal_level = logical;'
+          PGPASSWORD="jamesbond" psql -h localhost -d postgres -U jamesbond -p 5433 -c 'ALTER SYSTEM SET wal_level = logical;'
+
+          sudo systemctl restart postgresql@10-main.service
+          sudo systemctl restart postgresql@15-main.service
+          sudo systemctl restart postgresql
+
+          PGPASSWORD="jamesbond" psql -h localhost -d postgres -U jamesbond -p 5432 -c 'show wal_level;'
+          PGPASSWORD="jamesbond" psql -h localhost -d postgres -U jamesbond -p 5433 -c 'show wal_level;'
+
+      - name: Run RSpec
+        run: bundle exec rspec

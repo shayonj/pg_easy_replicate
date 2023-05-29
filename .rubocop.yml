@@ -1,0 +1,260 @@
+require:
+  - rubocop-rspec
+  - rubocop-rake
+  - rubocop-performance
+
+inherit_mode:
+  merge:
+    - Include
+    - Exclude
+    - AllowedMethods
+
+AllCops:
+  NewCops: enable
+  Exclude:
+    - "**/.git/**/*"
+    - "**/node_modules/**/*"
+    - "**/Brewfile"
+  TargetRubyVersion: 2.7
+
+Bundler/OrderedGems:
+  Include:
+    - "**/Gemfile"
+
+Style/FrozenStringLiteralComment:
+  EnforcedStyle: always
+
+Style/MutableConstant:
+  EnforcedStyle: literals
+
+Style/MethodCallWithArgsParentheses:
+  Enabled: true
+  EnforcedStyle: require_parentheses
+  AllowedMethods:
+    - yield
+    - raise
+    - fail
+    - puts
+    - require
+    - require_relative
+    - render
+    - redirect_to
+    - head
+    - throw
+    # RSpec
+    - to
+    - not_to
+    - to_not
+    - and
+    - or
+  Exclude:
+    - "**/Gemfile"
+    - "**/db/migrate/*"
+    - "**/db/schema.rb"
+
+Style/RedundantInitialize:
+  Enabled: false
+
+Layout:
+  Enabled: false
+
+Metrics:
+  Enabled: false
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+Naming/MethodParameterName:
+  Enabled: false
+
+Naming/PredicateName:
+  Enabled: false
+
+Naming/VariableNumber:
+  Enabled: false
+
+Style/AsciiComments:
+  Enabled: false
+
+Style/BlockDelimiters:
+  Enabled: false
+
+Style/CaseLikeIf:
+  Enabled: false
+
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+Style/CommentAnnotation:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/IfUnlessModifier:
+  Enabled: false
+
+Style/Lambda:
+  Enabled: false
+
+Style/ModuleFunction:
+  Enabled: false
+
+Style/MultilineBlockChain:
+  Enabled: false
+
+Style/NumericLiterals:
+  Enabled: false
+
+Style/NumericPredicate:
+  Enabled: false
+
+Style/ParallelAssignment:
+  Enabled: false
+
+Style/PerlBackrefs:
+  Enabled: false
+
+Style/QuotedSymbols:
+  EnforcedStyle: double_quotes
+  Enabled: false
+
+Style/RaiseArgs:
+  Enabled: false
+
+Style/RescueStandardError:
+  Enabled: false
+
+Style/SingleArgumentDig:
+  Enabled: false
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+  Enabled: false
+
+Style/StringLiteralsInInterpolation:
+  Enabled: false
+
+Style/SymbolArray:
+  EnforcedStyle: brackets
+
+Style/TrailingCommaInArguments:
+  Enabled: false
+
+Style/TrailingCommaInArrayLiteral:
+  Enabled: false
+  EnforcedStyleForMultiline: consistent_comma
+
+Style/TrailingCommaInHashLiteral:
+  Enabled: false
+
+Style/TrailingUnderscoreVariable:
+  Enabled: false
+
+Style/WordArray:
+  EnforcedStyle: brackets
+
+Style/ZeroLengthPredicate:
+  Enabled: false
+
+Style/DateTime:
+  Enabled: true
+
+RSpec/ExpectChange:
+  EnforcedStyle: block
+
+Gemspec/RequireMFA:
+  # Our Gemspec files are internal, MFA isn't needed
+  Enabled: false
+
+# Temporary Rubocop exclusions
+Style/OpenStructUse:
+  Enabled: false
+
+# Ruby 3 migration exclusions
+Style/HashSyntax:
+  Enabled: false
+
+Naming/BlockForwarding:
+  Enabled: false
+
+Lint/RedundantDirGlobSort:
+  Enabled: false
+
+RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/ContextWording:
+  Enabled: false
+
+RSpec/AnyInstance:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
+
+RSpec/RepeatedDescription:
+  Enabled: false
+
+RSpec/RepeatedExample:
+  Enabled: false
+
+RSpec/HookArgument:
+  Enabled: false
+
+RSpec/DescribeClass:
+  Enabled: false
+
+RSpec/DescribedClass:
+  Enabled: false
+
+RSpec/FilePath:
+  Enabled: false
+
+RSpec/IdenticalEqualityAssertion:
+  Enabled: false
+
+RSpec/InstanceVariable:
+  Enabled: false
+
+RSpec/MissingExampleGroupArgument:
+  Enabled: false
+
+RSpec/MultipleDescribes:
+  Enabled: false
+
+RSpec/NestedGroups:
+  Enabled: false
+
+RSpec/PredicateMatcher:
+  Enabled: false
+
+RSpec/Rails/HttpStatus:
+  Enabled: false
+
+RSpec/RepeatedExampleGroupDescription:
+  Enabled: false
+
+RSpec/StubbedMock:
+  Enabled: false
+
+Lint/UnusedMethodArgument:
+  Enabled: false
+
+Lint/MissingSuper:
+  Enabled: false
+
+RSpec/NoExpectationExample:
+  Enabled: false
+
+Style/AccessorGrouping:
+  Enabled: false
+
+Style/FormatStringToken:
+  Enabled: false
