@@ -2,7 +2,7 @@
 
 module DatabaseHelpers
   def test_schema
-    ENV["POSTGRES_SCHEMA"] || "test_schema"
+    ENV["POSTGRES_SCHEMA"] || "pger"
   end
 
   def connection_url

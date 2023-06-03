@@ -65,7 +65,7 @@ RSpec.describe(PgEasyReplicate::Query) do
         described_class.run(
           query: "select * from sellers;",
           connection_url: connection_url,
-          schema: "test_schema",
+          schema: "pger",
         ).to_a,
       ).to eq([])
     end

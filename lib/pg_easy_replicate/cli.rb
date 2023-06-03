@@ -41,6 +41,10 @@ module PgEasyReplicate
     method_option :everything,
                   aliases: "-e",
                   desc: "Cleans up all bootstrap tables"
+    method_option :sync,
+                  aliases: "-s",
+                  desc:
+                    "Cleans up the publication and subscription for the respective group"
     def cleanup
       PgEasyReplicate.cleanup(options)
     end

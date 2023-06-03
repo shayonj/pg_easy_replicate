@@ -9,6 +9,7 @@ require "pg_easy_replicate/helper"
 require "pg_easy_replicate/version"
 require "pg_easy_replicate/secure"
 require "pg_easy_replicate/query"
+require "pg_easy_replicate/group"
 require "pg_easy_replicate/cli"
 
 module PgEasyReplicate
@@ -64,12 +65,16 @@ module PgEasyReplicate
 
     def bootstrap(options)
       assert_config
+      Group.create(options)
+
       # setup table to persist info for schema, group, table
       # setup association with source db, target db and group
       # setup replication user
     end
 
     def cleanup(options)
+      Group.drop(options)
+
       # drop self created tables
       # drop publication and subscriptions from both DBs - if everything
     end
@@ -94,6 +99,10 @@ module PgEasyReplicate
         port: conn_info.find { |k| k[:keyword] == "port" }[:val],
         options: conn_info.find { |k| k[:keyword] == "options" }[:val],
       }
+    end
+
+    def internal_schema_name
+      "pger"
     end
 
     private
