@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module DatabaseHelpers
-  def schema
+  def test_schema
     ENV["POSTGRES_SCHEMA"] || "test_schema"
   end
 
@@ -11,9 +11,9 @@ module DatabaseHelpers
 
   def new_dummy_table_sql
     <<~SQL
-      CREATE SCHEMA IF NOT EXISTS #{schema};
+      CREATE SCHEMA IF NOT EXISTS #{test_schema};
 
-      CREATE TABLE IF NOT EXISTS #{schema}.sellers (
+      CREATE TABLE IF NOT EXISTS #{test_schema}.sellers (
         id serial PRIMARY KEY,
         name VARCHAR ( 50 ) UNIQUE NOT NULL,
         "createdOn" TIMESTAMP NOT NULL,
@@ -24,7 +24,7 @@ module DatabaseHelpers
 
   def setup_tables
     PgEasyReplicate::Query.run(
-      query: "DROP SCHEMA IF EXISTS #{schema} CASCADE;",
+      query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
       connection_url: connection_url,
     )
 
@@ -35,7 +35,7 @@ module DatabaseHelpers
 
     PgEasyReplicate::Query.run(
       connection_url: connection_url,
-      query: "SET search_path TO #{schema};",
+      query: "SET search_path TO #{test_schema};",
     )
   end
 

@@ -5,8 +5,9 @@ module PgEasyReplicate
     extend Helper
 
     class << self
-      def run(query:, connection_url:, reuse_trasaction: false)
+      def run(query:, connection_url:, schema: nil)
         conn = connect(connection_url)
+        conn.async_exec("SET search_path to #{schema}") if schema
         conn.async_exec("BEGIN;")
         if [PG::PQTRANS_INERROR, PG::PQTRANS_UNKNOWN].include?(
              conn.transaction_status,
@@ -32,7 +33,7 @@ module PgEasyReplicate
         end
         raise
       else
-        conn.async_exec("COMMIT;") unless reuse_trasaction
+        conn.async_exec("COMMIT;")
         conn.async_exec("RESET statement_timeout")
         result
       end

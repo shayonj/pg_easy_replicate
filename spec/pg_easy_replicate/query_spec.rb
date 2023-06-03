@@ -59,5 +59,15 @@ RSpec.describe(PgEasyReplicate::Query) do
         described_class.run(query: query, connection_url: connection_url)
       }.to raise_error(PG::DependentObjectsStillExist)
     end
+
+    it "performs query with supplied schema successfully" do
+      expect(
+        described_class.run(
+          query: "select * from sellers;",
+          connection_url: connection_url,
+          schema: "test_schema",
+        ).to_a,
+      ).to eq([])
+    end
   end
 end
