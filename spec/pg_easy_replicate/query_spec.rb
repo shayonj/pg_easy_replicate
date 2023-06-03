@@ -10,6 +10,12 @@ RSpec.describe(PgEasyReplicate::Query) do
 
     it "runs the query successfully" do
       expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
+        "SET statement_timeout to '5s'",
+      ).and_call_original
+      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
+        "RESET statement_timeout",
+      ).and_call_original
+      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
         "BEGIN;",
       ).and_call_original
       expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
@@ -30,6 +36,12 @@ RSpec.describe(PgEasyReplicate::Query) do
 
     it "performs rollback successfully" do
       query = "ALTER TABLE sellers DROP COLUMN last_login;"
+      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
+        "SET statement_timeout to '5s'",
+      ).and_call_original
+      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
+        "RESET statement_timeout",
+      ).and_call_original
       expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
         "BEGIN;",
       ).and_call_original

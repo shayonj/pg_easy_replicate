@@ -15,6 +15,8 @@ module PgEasyReplicate
         end
 
         logger.debug("Running query", { query: query })
+        conn.async_exec("SET statement_timeout to '5s'")
+
         result = conn.async_exec(query).to_a
       rescue Exception # rubocop:disable Lint/RescueException
         if conn
@@ -26,10 +28,12 @@ module PgEasyReplicate
           )
           conn.async_exec("ROLLBACK;")
           conn.async_exec("COMMIT;")
+          conn.async_exec("RESET statement_timeout")
         end
         raise
       else
         conn.async_exec("COMMIT;") unless reuse_trasaction
+        conn.async_exec("RESET statement_timeout")
         result
       end
 
