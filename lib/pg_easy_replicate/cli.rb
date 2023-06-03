@@ -12,10 +12,6 @@ module PgEasyReplicate
       PgEasyReplicate.assert_config
 
       puts "✅ Config is looking good."
-      puts "ℹ️  Source DB:"
-      puts JSON.pretty_generate(PgEasyReplicate.config[:source_db])
-      puts "ℹ️  Target DB:"
-      puts JSON.pretty_generate(PgEasyReplicate.config[:target_db])
     end
 
     desc "bootstrap",

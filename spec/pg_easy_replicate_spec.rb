@@ -6,10 +6,12 @@ RSpec.describe(PgEasyReplicate) do
   end
 
   describe ".config" do
-    it "returns the config for bother databases" do
+    it "returns the config for both databases" do
       result = described_class.config
       expect(result).to eq(
         {
+          source_db_is_superuser: true,
+          target_db_is_superuser: true,
           source_db: [
             { "name" => "max_logical_replication_workers", "setting" => "4" },
             { "name" => "max_replication_slots", "setting" => "10" },
@@ -58,6 +60,33 @@ RSpec.describe(PgEasyReplicate) do
         )
         expect { described_class.assert_config }.to raise_error(
           "WAL_LEVEL should be LOGICAL on target DB",
+        )
+      end
+
+      it "raises when user is not superuser on source db" do
+        allow(described_class).to receive(:config).and_return(
+          {
+            source_db_is_superuser: false,
+            target_db: [{ "name" => "wal_level", "setting" => "logical" }],
+            source_db: [{ "name" => "wal_level", "setting" => "logical" }],
+          },
+        )
+        expect { described_class.assert_config }.to raise_error(
+          "User on source database should be a superuser",
+        )
+      end
+
+      it "raises when user is not superuser on target db" do
+        allow(described_class).to receive(:config).and_return(
+          {
+            source_db_is_superuser: true,
+            target_db_is_superuser: false,
+            target_db: [{ "name" => "wal_level", "setting" => "logical" }],
+            source_db: [{ "name" => "wal_level", "setting" => "logical" }],
+          },
+        )
+        expect { described_class.assert_config }.to raise_error(
+          "User on target database should be a superuser",
         )
       end
     end

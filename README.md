@@ -86,31 +86,6 @@ Prints if source and target database have the required config
 $ pg_easy_replicate config_check
 
 ✅ Config is looking good.
-
-ℹ️  Source DB:
-[
-  {
-    "name": "max_logical_replication_workers",
-    "setting": "4"
-  },
-  {
-    "name": "max_replication_slots",
-    "setting": "10"
-  },
-  {
-    "name": "max_wal_senders",
-    "setting": "10"
-  },
-  {
-    "name": "max_worker_processes",
-    "setting": "8"
-  },
-  {
-    "name": "wal_level",
-    "setting": "logical"
-  }
-]
-...
 ```
 
 ### Bootstrap

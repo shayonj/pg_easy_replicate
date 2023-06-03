@@ -17,14 +17,16 @@ module PgEasyReplicate
         logger.debug("Running query", { query: query })
         result = conn.async_exec(query).to_a
       rescue Exception # rubocop:disable Lint/RescueException
-        conn.cancel if conn.transaction_status != PG::PQTRANS_IDLE
-        conn.block
-        logger.error(
-          "Exception raised, rolling back query",
-          { rollback: true, query: query },
-        )
-        conn.async_exec("ROLLBACK;")
-        conn.async_exec("COMMIT;")
+        if conn
+          conn.cancel if conn.transaction_status != PG::PQTRANS_IDLE
+          conn.block
+          logger.error(
+            "Exception raised, rolling back query",
+            { rollback: true, query: query },
+          )
+          conn.async_exec("ROLLBACK;")
+          conn.async_exec("COMMIT;")
+        end
         raise
       else
         conn.async_exec("COMMIT;") unless reuse_trasaction

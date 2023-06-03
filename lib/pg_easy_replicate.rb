@@ -25,9 +25,10 @@ module PgEasyReplicate
         begin
           q =
             "select name, setting from pg_settings where name in  ('max_wal_senders', 'max_worker_processes', 'wal_level',  'max_replication_slots', 'max_logical_replication_workers');"
-          PgEasyReplicate::Query.run(query: q, connection_url: source_db_url)
 
           {
+            source_db_is_superuser: is_super_user?(source_db_url),
+            target_db_is_superuser: is_super_user?(target_db_url),
             source_db:
               PgEasyReplicate::Query.run(
                 query: q,
@@ -39,6 +40,8 @@ module PgEasyReplicate
                 connection_url: target_db_url,
               ),
           }
+        rescue PG::ConnectionBad, PG::Error => e
+          abort("Unable to connect: #{e.message}")
         end
     end
 
@@ -47,10 +50,16 @@ module PgEasyReplicate
         abort("WAL_LEVEL should be LOGICAL on source DB")
       end
 
-      return if assert_wal_level_logical(config.dig(:target_db))
-      abort("WAL_LEVEL should be LOGICAL on target DB")
+      unless assert_wal_level_logical(config.dig(:target_db))
+        abort("WAL_LEVEL should be LOGICAL on target DB")
+      end
 
-      # TODO- assert user permissions is superuser
+      unless config.dig(:source_db_is_superuser)
+        abort("User on source database should be a superuser")
+      end
+
+      return if config.dig(:target_db_is_superuser)
+      abort("User on target database should be a superuser")
     end
 
     def bootstrap(options)
@@ -76,12 +85,33 @@ module PgEasyReplicate
         end
     end
 
+    def connection_info(conn_string)
+      conn_info = PG::Connection.conninfo_parse(conn_string)
+      {
+        user: conn_info.find { |k| k[:keyword] == "user" }[:val],
+        dbname: conn_info.find { |k| k[:keyword] == "dbname" }[:val],
+        host: conn_info.find { |k| k[:keyword] == "host" }[:val],
+        port: conn_info.find { |k| k[:keyword] == "port" }[:val],
+        options: conn_info.find { |k| k[:keyword] == "options" }[:val],
+      }
+    end
+
     private
 
     def assert_wal_level_logical(db_config)
       db_config&.find do |r|
         r.dig("name") == "wal_level" && r.dig("setting") == "logical"
       end
+    end
+
+    def is_super_user?(db_url)
+      PgEasyReplicate::Query.run(
+        query:
+          "select usesuper from pg_user where usename = '#{connection_info(db_url)[:user]}';",
+        connection_url: db_url,
+      ).first[
+        "usesuper"
+      ] == "t"
     end
   end
 end
