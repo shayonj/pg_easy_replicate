@@ -9,6 +9,7 @@ require "pg_easy_replicate/helper"
 require "pg_easy_replicate/version"
 require "pg_easy_replicate/secure"
 require "pg_easy_replicate/query"
+require "pg_easy_replicate/group"
 require "pg_easy_replicate/cli"
 
 module PgEasyReplicate
@@ -19,8 +20,8 @@ module PgEasyReplicate
 
   class << self
     def config
-      abort("SOURCE_DB_URL is missing") if source_db_url.nil?
-      abort("TARGET_DB_URL is missing") if target_db_url.nil?
+      abort_with("SOURCE_DB_URL is missing") if source_db_url.nil?
+      abort_with("TARGET_DB_URL is missing") if target_db_url.nil?
       @config ||=
         begin
           q =
@@ -41,37 +42,59 @@ module PgEasyReplicate
               ),
           }
         rescue PG::ConnectionBad, PG::Error => e
-          abort("Unable to connect: #{e.message}")
+          abort_with("Unable to connect: #{e.message}")
         end
     end
 
     def assert_config
       unless assert_wal_level_logical(config.dig(:source_db))
-        abort("WAL_LEVEL should be LOGICAL on source DB")
+        abort_with("WAL_LEVEL should be LOGICAL on source DB")
       end
 
       unless assert_wal_level_logical(config.dig(:target_db))
-        abort("WAL_LEVEL should be LOGICAL on target DB")
+        abort_with("WAL_LEVEL should be LOGICAL on target DB")
       end
 
       unless config.dig(:source_db_is_superuser)
-        abort("User on source database should be a superuser")
+        abort_with("User on source database should be a superuser")
       end
 
       return if config.dig(:target_db_is_superuser)
-      abort("User on target database should be a superuser")
+      abort_with("User on target database should be a superuser")
     end
 
     def bootstrap(options)
       assert_config
-      # setup table to persist info for schema, group, table
-      # setup association with source db, target db and group
+      Group.create(options)
       # setup replication user
     end
 
     def cleanup(options)
-      # drop self created tables
-      # drop publication and subscriptions from both DBs - if everything
+      Group.drop(options)
+      drop_schema if options[:everything]
+      # drop publication and subscriptions from both DBs - if everything or sync
+    end
+
+    def drop_schema
+      PgEasyReplicate::Query.run(
+        query: "DROP SCHEMA IF EXISTS #{internal_schema_name} CASCADE",
+        connection_url: source_db_url,
+        schema: internal_schema_name,
+      )
+    end
+
+    def setup_schema
+      sql = <<~SQL
+        create schema if not exists #{internal_schema_name};
+        grant usage on schema #{internal_schema_name} to #{db_user(source_db_url)};
+        grant create on schema #{internal_schema_name} to #{db_user(source_db_url)};
+      SQL
+
+      PgEasyReplicate::Query.run(
+        query: sql,
+        connection_url: source_db_url,
+        schema: internal_schema_name,
+      )
     end
 
     def logger
@@ -85,17 +108,6 @@ module PgEasyReplicate
         end
     end
 
-    def connection_info(conn_string)
-      conn_info = PG::Connection.conninfo_parse(conn_string)
-      {
-        user: conn_info.find { |k| k[:keyword] == "user" }[:val],
-        dbname: conn_info.find { |k| k[:keyword] == "dbname" }[:val],
-        host: conn_info.find { |k| k[:keyword] == "host" }[:val],
-        port: conn_info.find { |k| k[:keyword] == "port" }[:val],
-        options: conn_info.find { |k| k[:keyword] == "options" }[:val],
-      }
-    end
-
     private
 
     def assert_wal_level_logical(db_config)
@@ -104,11 +116,11 @@ module PgEasyReplicate
       end
     end
 
-    def is_super_user?(db_url)
+    def is_super_user?(url)
       PgEasyReplicate::Query.run(
         query:
-          "select usesuper from pg_user where usename = '#{connection_info(db_url)[:user]}';",
-        connection_url: db_url,
+          "select usesuper from pg_user where usename = '#{db_user(url)}';",
+        connection_url: url,
       ).first[
         "usesuper"
       ] == "t"

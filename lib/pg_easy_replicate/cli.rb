@@ -21,7 +21,7 @@ module PgEasyReplicate
                   required: true,
                   desc:
                     "Name of the grouping for this collection of source and target DB"
-    method_option :schema,
+    method_option :schema_name,
                   aliases: "-s",
                   desc:
                     "Name of the schema tables are in, only required if passsing list of tables"
@@ -41,6 +41,10 @@ module PgEasyReplicate
     method_option :everything,
                   aliases: "-e",
                   desc: "Cleans up all bootstrap tables"
+    method_option :sync,
+                  aliases: "-s",
+                  desc:
+                    "Cleans up the publication and subscription for the respective group"
     def cleanup
       PgEasyReplicate.cleanup(options)
     end
