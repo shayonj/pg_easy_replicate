@@ -5,6 +5,7 @@ PATH
       lockbox (~> 1.2.0)
       ougai (~> 2.0.0)
       pg (~> 1.5.3)
+      sequel (~> 5.69.0)
       thor (~> 1.2.2)
 
 GEM
@@ -77,6 +78,7 @@ GEM
       rubocop-capybara (~> 2.17)
       rubocop-factory_bot (~> 2.22)
     ruby-progressbar (1.13.0)
+    sequel (5.69.0)
     syntax_tree (6.1.1)
       prettier_print (>= 1.2.0)
     syntax_tree-haml (4.0.3)
@@ -100,9 +102,9 @@ DEPENDENCIES
   pg_easy_replicate!
   prettier_print
   pry
-  rake (~> 13.0)
-  rspec (~> 3.0)
-  rubocop (~> 1.21)
+  rake
+  rspec
+  rubocop
   rubocop-packaging
   rubocop-performance
   rubocop-rake

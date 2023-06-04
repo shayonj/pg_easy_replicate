@@ -5,93 +5,63 @@ module PgEasyReplicate
     extend Helper
     class << self
       def setup
-        sql = <<~SQL
-          CREATE TABLE groups (
-            id serial PRIMARY KEY,
-            name TEXT  UNIQUE NOT NULL,
-            table_names TEXT,
-            schema_name TEXT,
-            created_at TIMESTAMP default current_timestamp NOT NULL,
-            started_at TIMESTAMP,
-            completed_at TIMESTAMP
-          );
-        SQL
-
-        PgEasyReplicate::Query.run(
-          query: sql,
-          connection_url: source_db_url,
-          schema: internal_schema_name,
-        )
+        conn =
+          PgEasyReplicate::Query.connect(source_db_url, internal_schema_name)
+        conn.create_table("groups") do
+          primary_key(:id)
+          column(:name, String, null: false)
+          column(:table_names, String, text: true)
+          column(:schema_name, String)
+          column(:created_at, Time, default: Sequel::CURRENT_TIMESTAMP)
+          column(:started_at, Time, default: Sequel::CURRENT_TIMESTAMP)
+          column(:completed_at, Time)
+        end
       end
 
       def drop
-        sql = <<~SQL
-          DROP TABLE IF EXISTS groups;
-        SQL
-        PgEasyReplicate::Query.run(
-          query: sql,
-          connection_url: source_db_url,
-          schema: internal_schema_name,
-        )
+        PgEasyReplicate::Query.connect(
+          source_db_url,
+          internal_schema_name,
+        ).drop_table?("groups")
       end
 
       def create(options)
-        sql = <<~SQL
-          insert into groups (name, table_names, schema_name)
-          values ($1, $2, $3);
-        SQL
-        values = [options[:name], options[:table_names], options[:schema_name]]
-
-        PgEasyReplicate::Query.run_prepared(
-          statement: sql,
-          values: values,
-          connection_url: source_db_url,
-          schema: internal_schema_name,
+        groups.insert(
+          name: options[:name],
+          table_names: options[:table_names],
+          schema_name: options[:schema_name],
         )
       rescue => e
         abort_with("Adding group entry failed: #{e.message}")
       end
 
       def update(group_name:, started_at: nil, completed_at: nil)
-        sql = <<~SQL
-          UPDATE groups
-          SET started_at = $1,
-          completed_at = $2
-          WHERE name= $3
-          RETURNING *
-        SQL
-        values = [started_at&.utc, completed_at&.utc, group_name]
-
-        PgEasyReplicate::Query.run_prepared(
-          statement: sql,
-          values: values,
-          connection_url: source_db_url,
-          schema: internal_schema_name,
+        groups.where(name: group_name).update(
+          started_at: started_at&.utc,
+          completed_at: completed_at&.utc,
         )
       rescue => e
         abort_with("Updating group entry failed: #{e.message}")
       end
 
       def find(group_name)
-        PgEasyReplicate::Query.run_prepared(
-          statement: "select * from groups where name = $1 limit 1",
-          values: [group_name],
-          connection_url: source_db_url,
-          schema: internal_schema_name,
-        )
+        groups.first(name: group_name)
       rescue => e
         abort_with("Finding group entry failed: #{e.message}")
       end
 
       def delete(group_name)
-        PgEasyReplicate::Query.run_prepared(
-          statement: "DELETE from groups where name = $1",
-          values: [group_name],
-          connection_url: source_db_url,
-          schema: internal_schema_name,
-        )
+        groups.where(name: group_name).delete
       rescue => e
         abort_with("Deleting group entry failed: #{e.message}")
+      end
+
+      private
+
+      def groups
+        conn =
+          PgEasyReplicate::Query.connect(source_db_url, internal_schema_name)
+        conn[:groups]
       end
     end
   end

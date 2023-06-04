@@ -10,21 +10,21 @@ RSpec.describe(PgEasyReplicate) do
       result = described_class.config
       expect(result).to eq(
         {
-          source_db_is_superuser: true,
-          target_db_is_superuser: true,
+          source_db_is_superuser: false,
+          target_db_is_superuser: false,
           source_db: [
-            { "name" => "max_logical_replication_workers", "setting" => "4" },
-            { "name" => "max_replication_slots", "setting" => "10" },
-            { "name" => "max_wal_senders", "setting" => "10" },
-            { "name" => "max_worker_processes", "setting" => "8" },
-            { "name" => "wal_level", "setting" => "logical" },
+            { name: "max_logical_replication_workers", setting: "4" },
+            { name: "max_replication_slots", setting: "10" },
+            { name: "max_wal_senders", setting: "10" },
+            { name: "max_worker_processes", setting: "8" },
+            { name: "wal_level", setting: "logical" },
           ],
           target_db: [
-            { "name" => "max_logical_replication_workers", "setting" => "4" },
-            { "name" => "max_replication_slots", "setting" => "10" },
-            { "name" => "max_wal_senders", "setting" => "10" },
-            { "name" => "max_worker_processes", "setting" => "8" },
-            { "name" => "wal_level", "setting" => "logical" },
+            { name: "max_logical_replication_workers", setting: "4" },
+            { name: "max_replication_slots", setting: "10" },
+            { name: "max_wal_senders", setting: "10" },
+            { name: "max_worker_processes", setting: "8" },
+            { name: "wal_level", setting: "logical" },
           ],
         },
       )
@@ -102,7 +102,7 @@ RSpec.describe(PgEasyReplicate) do
             connection_url: connection_url,
             schema: PgEasyReplicate.internal_schema_name,
           )
-        expect(r).to eq([{ "schema_name" => "pger" }])
+        expect(r).to eq([{ schema_name: "pger" }])
       end
     end
 

@@ -9,51 +9,37 @@ RSpec.describe(PgEasyReplicate::Query) do
     end
 
     it "runs the query successfully" do
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "SET statement_timeout to '5s'",
-      ).and_call_original
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "RESET statement_timeout",
-      ).and_call_original
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "BEGIN;",
-      ).and_call_original
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "SELECT 'FooBar' as result",
-      ).and_call_original
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "COMMIT;",
-      ).and_call_original
-
       result =
         described_class.run(
           query: "SELECT 'FooBar' as result",
           connection_url: connection_url,
         )
 
-      expect(result).to eq([{ "result" => "FooBar" }])
+      expect(result).to eq([{ result: "FooBar" }])
+    end
+
+    it "sets the statement_timeout" do
+      result =
+        described_class.run(
+          query: "show statement_timeout",
+          connection_url: connection_url,
+        )
+
+      expect(result).to eq([{ statement_timeout: "5s" }])
     end
 
     it "performs rollback successfully" do
       query = "ALTER TABLE sellers DROP COLUMN last_login;"
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "SET statement_timeout to '5s'",
-      ).and_call_original
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "RESET statement_timeout",
-      ).and_call_original
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "BEGIN;",
-      ).and_call_original
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "ROLLBACK;",
-      ).and_call_original
-      allow_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        query,
+      allow_any_instance_of(Sequel::Postgres::Database).to receive(
+        :fetch,
       ).and_raise(PG::DependentObjectsStillExist)
 
       expect {
-        described_class.run(query: query, connection_url: connection_url)
+        described_class.run(
+          query: query,
+          connection_url: connection_url,
+          schema: PgEasyReplicate.internal_schema_name,
+        )
       }.to raise_error(PG::DependentObjectsStillExist)
     end
 

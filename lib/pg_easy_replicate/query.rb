@@ -7,83 +7,17 @@ module PgEasyReplicate
     class << self
       def run(query:, connection_url:, schema: nil)
         conn = connect(connection_url)
-        conn.async_exec("SET search_path to #{schema}") if schema
-        conn.async_exec("BEGIN;")
-        if [PG::PQTRANS_INERROR, PG::PQTRANS_UNKNOWN].include?(
-             conn.transaction_status,
-           )
-          conn.cancel
+        conn.transaction do
+          conn.run("SET search_path to #{schema}") if schema
+          conn.run("SET statement_timeout to '5s'")
+          conn.fetch(query).to_a
         end
-
-        logger.debug("Running query", { query: query, schema: schema })
-        conn.async_exec("SET statement_timeout to '5s'")
-
-        result = conn.async_exec(query).to_a
-      rescue Exception # rubocop:disable Lint/RescueException
-        if conn
-          conn.cancel if conn.transaction_status != PG::PQTRANS_IDLE
-          conn.block
-          logger.error(
-            "Exception raised, rolling back query",
-            { rollback: true, query: query, schema: schema },
-          )
-          conn.async_exec("ROLLBACK;")
-          if conn.transaction_status == PG::PQTRANS_INTRANS
-            conn.async_exec("COMMIT;")
-          end
-          conn.async_exec("RESET statement_timeout")
-        end
-        raise
-      else
-        if conn.transaction_status == PG::PQTRANS_INTRANS
-          conn.async_exec("COMMIT;")
-        end
-        conn.async_exec("RESET statement_timeout")
-        result
+      ensure
+        conn&.fetch("RESET statement_timeout")
       end
 
-      def run_prepared(statement:, values:, connection_url:, schema: nil)
-        conn = connect(connection_url)
-        conn.async_exec("SET search_path to #{schema}") if schema
-        conn.async_exec("BEGIN;")
-        if [PG::PQTRANS_INERROR, PG::PQTRANS_UNKNOWN].include?(
-             conn.transaction_status,
-           )
-          conn.cancel
-        end
-
-        logger.debug(
-          "Running prepared statement",
-          { statement: statement, schema: schema },
-        )
-        conn.async_exec("SET statement_timeout to '5s'")
-
-        result = conn.exec_params(statement, values).to_a
-      rescue Exception # rubocop:disable Lint/RescueException
-        if conn
-          conn.cancel if conn.transaction_status != PG::PQTRANS_IDLE
-          conn.block
-          logger.error(
-            "Exception raised, rolling back query",
-            { rollback: true, statement: statement, schema: schema },
-          )
-          conn.async_exec("ROLLBACK;")
-          if conn.transaction_status == PG::PQTRANS_INTRANS
-            conn.async_exec("COMMIT;")
-          end
-          conn.async_exec("RESET statement_timeout")
-        end
-        raise
-      else
-        if conn.transaction_status == PG::PQTRANS_INTRANS
-          conn.async_exec("COMMIT;")
-        end
-        conn.async_exec("RESET statement_timeout")
-        result
-      end
-
-      def connect(connection_url)
-        c = PG.connect(connection_url)
+      def connect(connection_url, schema = nil)
+        c = Sequel.connect(connection_url, logger: logger, search_path: schema)
         logger.debug("Connection established")
         c
       end

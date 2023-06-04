@@ -28,15 +28,16 @@ module DatabaseHelpers
       connection_url: connection_url,
     )
 
-    PgEasyReplicate::Query.run(
-      connection_url: connection_url,
-      query: new_dummy_table_sql,
+    conn = PgEasyReplicate::Query.connect(connection_url)
+    conn.run(
+      "CREATE SCHEMA IF NOT EXISTS #{test_schema}; SET search_path TO #{test_schema};",
     )
-
-    PgEasyReplicate::Query.run(
-      connection_url: connection_url,
-      query: "SET search_path TO #{test_schema};",
-    )
+    return if conn.table_exists?("sellers")
+    conn.create_table("sellers") do
+      primary_key(:id)
+      column(:name, String)
+      column(:last_login, Time)
+    end
   end
 
   def self.populate_env_vars
