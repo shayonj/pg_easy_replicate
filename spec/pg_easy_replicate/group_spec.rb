@@ -108,7 +108,7 @@ RSpec.describe(PgEasyReplicate::Group) do
 
     it "captures the error" do
       expect { described_class.create({}) }.to raise_error(
-        SystemExit,
+        RuntimeError,
         /Adding group entry failed: ERROR:  null value in column "name"/,
       )
     end

@@ -49,7 +49,7 @@ module PgEasyReplicate
           schema: PgEasyReplicate.internal_schema_name,
         )
       rescue => e
-        abort("Adding group entry failed: #{e.message}")
+        abort_with("Adding group entry failed: #{e.message}")
       end
 
       def update(group_name:, started_at: nil, completed_at: nil)
@@ -69,35 +69,29 @@ module PgEasyReplicate
           schema: PgEasyReplicate.internal_schema_name,
         )
       rescue => e
-        abort("Updating group entry failed: #{e.message}")
+        abort_with("Updating group entry failed: #{e.message}")
       end
 
       def find(group_name)
-        sql = <<~SQL
-          select * from groups where name = '#{group_name}' limit 1
-        SQL
-
-        PgEasyReplicate::Query.run(
-          query: sql,
+        PgEasyReplicate::Query.run_prepared(
+          statement: "select * from groups where name = $1 limit 1",
+          values: [group_name],
           connection_url: source_db_url,
           schema: PgEasyReplicate.internal_schema_name,
         )
       rescue => e
-        abort("Finding group entry failed: #{e.message}")
+        abort_with("Finding group entry failed: #{e.message}")
       end
 
       def delete(group_name)
-        sql = <<~SQL
-          DELETE from groups where name = '#{group_name}'
-        SQL
-
-        PgEasyReplicate::Query.run(
-          query: sql,
+        PgEasyReplicate::Query.run_prepared(
+          statement: "DELETE from groups where name = $1",
+          values: [group_name],
           connection_url: source_db_url,
           schema: PgEasyReplicate.internal_schema_name,
         )
       rescue => e
-        abort("Deleting group entry failed: #{e.message}")
+        abort_with("Deleting group entry failed: #{e.message}")
       end
     end
   end

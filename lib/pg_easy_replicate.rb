@@ -20,8 +20,8 @@ module PgEasyReplicate
 
   class << self
     def config
-      abort("SOURCE_DB_URL is missing") if source_db_url.nil?
-      abort("TARGET_DB_URL is missing") if target_db_url.nil?
+      abort_with("SOURCE_DB_URL is missing") if source_db_url.nil?
+      abort_with("TARGET_DB_URL is missing") if target_db_url.nil?
       @config ||=
         begin
           q =
@@ -42,25 +42,25 @@ module PgEasyReplicate
               ),
           }
         rescue PG::ConnectionBad, PG::Error => e
-          abort("Unable to connect: #{e.message}")
+          abort_with("Unable to connect: #{e.message}")
         end
     end
 
     def assert_config
       unless assert_wal_level_logical(config.dig(:source_db))
-        abort("WAL_LEVEL should be LOGICAL on source DB")
+        abort_with("WAL_LEVEL should be LOGICAL on source DB")
       end
 
       unless assert_wal_level_logical(config.dig(:target_db))
-        abort("WAL_LEVEL should be LOGICAL on target DB")
+        abort_with("WAL_LEVEL should be LOGICAL on target DB")
       end
 
       unless config.dig(:source_db_is_superuser)
-        abort("User on source database should be a superuser")
+        abort_with("User on source database should be a superuser")
       end
 
       return if config.dig(:target_db_is_superuser)
-      abort("User on target database should be a superuser")
+      abort_with("User on target database should be a superuser")
     end
 
     def bootstrap(options)
@@ -94,10 +94,6 @@ module PgEasyReplicate
         port: conn_info.find { |k| k[:keyword] == "port" }[:val],
         options: conn_info.find { |k| k[:keyword] == "options" }[:val],
       }
-    end
-
-    def internal_schema_name
-      "pger"
     end
 
     private

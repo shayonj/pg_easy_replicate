@@ -15,7 +15,7 @@ module PgEasyReplicate
           conn.cancel
         end
 
-        logger.debug("Running query", { query: query })
+        logger.debug("Running query", { query: query, schema: schema })
         conn.async_exec("SET statement_timeout to '5s'")
 
         result = conn.async_exec(query).to_a
@@ -25,7 +25,7 @@ module PgEasyReplicate
           conn.block
           logger.error(
             "Exception raised, rolling back query",
-            { rollback: true, query: query },
+            { rollback: true, query: query, schema: schema },
           )
           conn.async_exec("ROLLBACK;")
           if conn.transaction_status == PG::PQTRANS_INTRANS
@@ -52,7 +52,10 @@ module PgEasyReplicate
           conn.cancel
         end
 
-        logger.debug("Running prepared statement", { statement: statement })
+        logger.debug(
+          "Running prepared statement",
+          { statement: statement, schema: schema },
+        )
         conn.async_exec("SET statement_timeout to '5s'")
 
         result = conn.exec_params(statement, values).to_a
@@ -62,7 +65,7 @@ module PgEasyReplicate
           conn.block
           logger.error(
             "Exception raised, rolling back query",
-            { rollback: true, statement: statement },
+            { rollback: true, statement: statement, schema: schema },
           )
           conn.async_exec("ROLLBACK;")
           if conn.transaction_status == PG::PQTRANS_INTRANS

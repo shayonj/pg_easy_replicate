@@ -13,5 +13,18 @@ module PgEasyReplicate
     def logger
       PgEasyReplicate.logger
     end
+
+    def internal_schema_name
+      "pger"
+    end
+
+    def test_env?
+      ENV.fetch("RACK_ENV", nil) == "test"
+    end
+
+    def abort_with(msg)
+      raise(msg) if test_env?
+      abort(msg)
+    end
   end
 end
