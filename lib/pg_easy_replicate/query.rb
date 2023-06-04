@@ -17,7 +17,12 @@ module PgEasyReplicate
       end
 
       def connect(connection_url, schema = nil)
-        c = Sequel.connect(connection_url, logger: logger, search_path: schema)
+        c =
+          Sequel.connect(
+            connection_url,
+            logger: ENV.fetch("DEBUG", nil) ? logger : nil,
+            search_path: schema,
+          )
         logger.debug("Connection established")
         c
       end
