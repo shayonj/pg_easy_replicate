@@ -90,5 +90,36 @@ RSpec.describe(PgEasyReplicate) do
         )
       end
     end
+
+    describe ".setup_schema" do
+      it "sets up the schema" do
+        described_class.setup_schema
+
+        r =
+          PgEasyReplicate::Query.run(
+            query:
+              "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '#{PgEasyReplicate.internal_schema_name}';",
+            connection_url: connection_url,
+            schema: PgEasyReplicate.internal_schema_name,
+          )
+        expect(r).to eq([{ "schema_name" => "pger" }])
+      end
+    end
+
+    describe ".drop_schema" do
+      it "drops up the schema" do
+        described_class.setup_schema
+        described_class.drop_schema
+
+        r =
+          PgEasyReplicate::Query.run(
+            query:
+              "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '#{PgEasyReplicate.internal_schema_name}';",
+            connection_url: connection_url,
+            schema: PgEasyReplicate.internal_schema_name,
+          )
+        expect(r).to eq([])
+      end
+    end
   end
 end
