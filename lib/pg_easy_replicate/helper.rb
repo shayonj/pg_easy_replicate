@@ -22,6 +22,21 @@ module PgEasyReplicate
       ENV.fetch("RACK_ENV", nil) == "test"
     end
 
+    def connection_info(conn_string)
+      conn_info = PG::Connection.conninfo_parse(conn_string)
+      {
+        user: conn_info.find { |k| k[:keyword] == "user" }[:val],
+        dbname: conn_info.find { |k| k[:keyword] == "dbname" }[:val],
+        host: conn_info.find { |k| k[:keyword] == "host" }[:val],
+        port: conn_info.find { |k| k[:keyword] == "port" }[:val],
+        options: conn_info.find { |k| k[:keyword] == "options" }[:val],
+      }
+    end
+
+    def db_user(url)
+      connection_info(url)[:user]
+    end
+
     def abort_with(msg)
       raise(msg) if test_env?
       abort(msg)

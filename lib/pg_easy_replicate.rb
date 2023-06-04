@@ -71,7 +71,30 @@ module PgEasyReplicate
 
     def cleanup(options)
       Group.drop(options)
-      # drop publication and subscriptions from both DBs - if everything
+      drop_schema if options[:everything]
+      # drop publication and subscriptions from both DBs - if everything or sync
+    end
+
+    def drop_schema
+      PgEasyReplicate::Query.run(
+        query: "DROP SCHEMA IF EXISTS #{internal_schema_name} CASCADE",
+        connection_url: source_db_url,
+        schema: internal_schema_name,
+      )
+    end
+
+    def setup_schema
+      sql = <<~SQL
+        create schema if not exists #{internal_schema_name};
+        grant usage on schema #{internal_schema_name} to #{db_user(source_db_url)};
+        grant create on schema #{internal_schema_name} to #{db_user(source_db_url)};
+      SQL
+
+      PgEasyReplicate::Query.run(
+        query: sql,
+        connection_url: source_db_url,
+        schema: internal_schema_name,
+      )
     end
 
     def logger
@@ -85,17 +108,6 @@ module PgEasyReplicate
         end
     end
 
-    def connection_info(conn_string)
-      conn_info = PG::Connection.conninfo_parse(conn_string)
-      {
-        user: conn_info.find { |k| k[:keyword] == "user" }[:val],
-        dbname: conn_info.find { |k| k[:keyword] == "dbname" }[:val],
-        host: conn_info.find { |k| k[:keyword] == "host" }[:val],
-        port: conn_info.find { |k| k[:keyword] == "port" }[:val],
-        options: conn_info.find { |k| k[:keyword] == "options" }[:val],
-      }
-    end
-
     private
 
     def assert_wal_level_logical(db_config)
@@ -104,11 +116,11 @@ module PgEasyReplicate
       end
     end
 
-    def is_super_user?(db_url)
+    def is_super_user?(url)
       PgEasyReplicate::Query.run(
         query:
-          "select usesuper from pg_user where usename = '#{connection_info(db_url)[:user]}';",
-        connection_url: db_url,
+          "select usesuper from pg_user where usename = '#{db_user(url)}';",
+        connection_url: url,
       ).first[
         "usesuper"
       ] == "t"

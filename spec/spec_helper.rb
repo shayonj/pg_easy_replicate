@@ -18,4 +18,5 @@ RSpec.configure do |config|
 
   config.include(DatabaseHelpers)
   config.before(:suite) { DatabaseHelpers.populate_env_vars }
+  config.after(:suite) { PgEasyReplicate.drop_schema }
 end

@@ -5,6 +5,8 @@ module PgEasyReplicate
     extend Helper
     class << self
       def setup
+        PgEasyReplicate.setup_schema
+
         sql = <<~SQL
           CREATE TABLE groups (
             id serial PRIMARY KEY,
@@ -20,7 +22,7 @@ module PgEasyReplicate
         PgEasyReplicate::Query.run(
           query: sql,
           connection_url: source_db_url,
-          schema: PgEasyReplicate.internal_schema_name,
+          schema: internal_schema_name,
         )
       end
 
@@ -31,7 +33,7 @@ module PgEasyReplicate
         PgEasyReplicate::Query.run(
           query: sql,
           connection_url: source_db_url,
-          schema: PgEasyReplicate.internal_schema_name,
+          schema: internal_schema_name,
         )
       end
 
@@ -46,7 +48,7 @@ module PgEasyReplicate
           statement: sql,
           values: values,
           connection_url: source_db_url,
-          schema: PgEasyReplicate.internal_schema_name,
+          schema: internal_schema_name,
         )
       rescue => e
         abort_with("Adding group entry failed: #{e.message}")
@@ -66,7 +68,7 @@ module PgEasyReplicate
           statement: sql,
           values: values,
           connection_url: source_db_url,
-          schema: PgEasyReplicate.internal_schema_name,
+          schema: internal_schema_name,
         )
       rescue => e
         abort_with("Updating group entry failed: #{e.message}")
@@ -77,7 +79,7 @@ module PgEasyReplicate
           statement: "select * from groups where name = $1 limit 1",
           values: [group_name],
           connection_url: source_db_url,
-          schema: PgEasyReplicate.internal_schema_name,
+          schema: internal_schema_name,
         )
       rescue => e
         abort_with("Finding group entry failed: #{e.message}")
@@ -88,7 +90,7 @@ module PgEasyReplicate
           statement: "DELETE from groups where name = $1",
           values: [group_name],
           connection_url: source_db_url,
-          schema: PgEasyReplicate.internal_schema_name,
+          schema: internal_schema_name,
         )
       rescue => e
         abort_with("Deleting group entry failed: #{e.message}")
