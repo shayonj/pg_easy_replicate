@@ -66,16 +66,11 @@ module PgEasyReplicate
     def bootstrap(options)
       assert_config
       Group.create(options)
-
-      # setup table to persist info for schema, group, table
-      # setup association with source db, target db and group
       # setup replication user
     end
 
     def cleanup(options)
       Group.drop(options)
-
-      # drop self created tables
       # drop publication and subscriptions from both DBs - if everything
     end
 

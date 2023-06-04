@@ -8,9 +8,6 @@ module PgEasyReplicate
         sql = <<~SQL
           CREATE TABLE groups (
             id serial PRIMARY KEY,
-            source_db_connstring TEXT  UNIQUE NOT NULL,
-            target_db_connstring TEXT  UNIQUE NOT NULL,
-            encryption_key VARCHAR NOT NULL,
             name TEXT  UNIQUE NOT NULL,
             table_names TEXT,
             schema_name TEXT,
@@ -39,19 +36,68 @@ module PgEasyReplicate
       end
 
       def create(options)
-        # Insert row
+        sql = <<~SQL
+          insert into groups (name, table_names, schema_name)
+          values ($1, $2, $3);
+        SQL
+        values = [options[:name], options[:table_names], options[:schema_name]]
+
+        PgEasyReplicate::Query.run_prepared(
+          statement: sql,
+          values: values,
+          connection_url: source_db_url,
+          schema: PgEasyReplicate.internal_schema_name,
+        )
+      rescue => e
+        abort("Adding group entry failed: #{e.message}")
+      end
+
+      def update(group_name:, started_at: nil, completed_at: nil)
+        sql = <<~SQL
+          UPDATE groups
+          SET started_at = $1,
+          completed_at = $2
+          WHERE name= $3
+          RETURNING *
+        SQL
+        values = [started_at&.utc, completed_at&.utc, group_name]
+
+        PgEasyReplicate::Query.run_prepared(
+          statement: sql,
+          values: values,
+          connection_url: source_db_url,
+          schema: PgEasyReplicate.internal_schema_name,
+        )
+      rescue => e
+        abort("Updating group entry failed: #{e.message}")
       end
 
       def find(group_name)
         sql = <<~SQL
-          select * from groups where group_name = #{group_name}
+          select * from groups where name = '#{group_name}' limit 1
         SQL
-        PgEasyReplicate::Query.run(query: sql, connection_url: source_db_url)
+
+        PgEasyReplicate::Query.run(
+          query: sql,
+          connection_url: source_db_url,
+          schema: PgEasyReplicate.internal_schema_name,
+        )
+      rescue => e
+        abort("Finding group entry failed: #{e.message}")
       end
 
-      def delete(options)
-        # assert prelimnary checks
-        # assert subscription publication is setup
+      def delete(group_name)
+        sql = <<~SQL
+          DELETE from groups where name = '#{group_name}'
+        SQL
+
+        PgEasyReplicate::Query.run(
+          query: sql,
+          connection_url: source_db_url,
+          schema: PgEasyReplicate.internal_schema_name,
+        )
+      rescue => e
+        abort("Deleting group entry failed: #{e.message}")
       end
     end
   end

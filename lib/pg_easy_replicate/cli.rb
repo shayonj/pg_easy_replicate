@@ -21,7 +21,7 @@ module PgEasyReplicate
                   required: true,
                   desc:
                     "Name of the grouping for this collection of source and target DB"
-    method_option :schema,
+    method_option :schema_name,
                   aliases: "-s",
                   desc:
                     "Name of the schema tables are in, only required if passsing list of tables"

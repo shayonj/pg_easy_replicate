@@ -30,12 +30,6 @@ RSpec.describe(PgEasyReplicate::Group) do
       expect(columns).to eq(
         [
           { "column_name" => "id", "data_type" => "integer" },
-          { "column_name" => "source_db_connstring", "data_type" => "text" },
-          { "column_name" => "target_db_connstring", "data_type" => "text" },
-          {
-            "column_name" => "encryption_key",
-            "data_type" => "character varying",
-          },
           { "column_name" => "name", "data_type" => "text" },
           { "column_name" => "table_names", "data_type" => "text" },
           { "column_name" => "schema_name", "data_type" => "text" },
@@ -77,6 +71,128 @@ RSpec.describe(PgEasyReplicate::Group) do
           schema: PgEasyReplicate.internal_schema_name,
         )
       expect(r).to eq([{ "exists" => "f" }])
+    end
+  end
+
+  describe ".create" do
+    before { described_class.setup }
+    after { described_class.drop }
+
+    it "adds a row with just the required fields" do
+      described_class.create({ name: "test" })
+
+      r =
+        PgEasyReplicate::Query.run(
+          query: "select * from groups",
+          connection_url: connection_url,
+          schema: PgEasyReplicate.internal_schema_name,
+        )
+      expect(r.first["name"]).to eq("test")
+    end
+
+    it "adds a row with table names and schema" do
+      described_class.create(
+        { name: "test", table_names: "table1, table2", schema_name: "foo" },
+      )
+
+      r =
+        PgEasyReplicate::Query.run(
+          query: "select * from groups",
+          connection_url: connection_url,
+          schema: PgEasyReplicate.internal_schema_name,
+        )
+      expect(r.first["name"]).to eq("test")
+      expect(r.first["table_names"]).to eq("table1, table2")
+      expect(r.first["schema_name"]).to eq("foo")
+    end
+
+    it "captures the error" do
+      expect { described_class.create({}) }.to raise_error(
+        SystemExit,
+        /Adding group entry failed: ERROR:  null value in column "name"/,
+      )
+    end
+  end
+
+  describe ".find" do
+    before { described_class.setup }
+    after { described_class.drop }
+
+    it "returns a row" do
+      described_class.create(
+        { name: "test", table_names: "table1, table2", schema_name: "foo" },
+      )
+
+      expect(described_class.find("test")).to include(
+        hash_including(
+          "completed_at" => nil,
+          "id" => kind_of(String),
+          "name" => "test",
+          "schema_name" => "foo",
+          "started_at" => nil,
+          "table_names" => "table1, table2",
+        ),
+      )
+    end
+  end
+
+  describe ".update" do
+    before { described_class.setup }
+    after { described_class.drop }
+
+    it "updates the started_at and completed_at successfully" do
+      described_class.create(
+        { name: "test", table_names: "table1, table2", schema_name: "foo" },
+      )
+      r =
+        described_class.update(
+          group_name: "test",
+          started_at: Time.now,
+          completed_at: Time.now,
+        )
+
+      expect(r).to include(
+        hash_including(
+          "completed_at" => kind_of(String),
+          "id" => kind_of(String),
+          "name" => "test",
+          "schema_name" => "foo",
+          "started_at" => kind_of(String),
+          "table_names" => "table1, table2",
+        ),
+      )
+
+      expect(described_class.find("test")).to include(
+        hash_including(
+          "completed_at" => kind_of(String),
+          "id" => kind_of(String),
+          "name" => "test",
+          "schema_name" => "foo",
+          "started_at" => kind_of(String),
+          "table_names" => "table1, table2",
+        ),
+      )
+
+      expect(
+        Time.parse(described_class.find("test").first["completed_at"]),
+      ).to be_a(Time)
+      expect(
+        Time.parse(described_class.find("test").first["started_at"]),
+      ).to be_a(Time)
+    end
+  end
+
+  describe ".delete" do
+    before { described_class.setup }
+    after { described_class.drop }
+
+    it "returns a row" do
+      described_class.create(
+        { name: "test", table_names: "table1, table2", schema_name: "foo" },
+      )
+      described_class.delete("test")
+
+      expect(described_class.find("test")).to eq([])
     end
   end
 end

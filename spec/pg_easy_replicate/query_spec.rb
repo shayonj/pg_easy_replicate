@@ -48,9 +48,6 @@ RSpec.describe(PgEasyReplicate::Query) do
       expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
         "ROLLBACK;",
       ).and_call_original
-      expect_any_instance_of(PG::Connection).to receive(:async_exec).with(
-        "COMMIT;",
-      ).and_call_original
       allow_any_instance_of(PG::Connection).to receive(:async_exec).with(
         query,
       ).and_raise(PG::DependentObjectsStillExist)
