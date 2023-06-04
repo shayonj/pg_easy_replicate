@@ -38,7 +38,7 @@ RSpec.describe(PgEasyReplicate::Query) do
         described_class.run(
           query: query,
           connection_url: connection_url,
-          schema: PgEasyReplicate.internal_schema_name,
+          schema: "pger_test",
         )
       }.to raise_error(PG::DependentObjectsStillExist)
     end
@@ -48,7 +48,7 @@ RSpec.describe(PgEasyReplicate::Query) do
         described_class.run(
           query: "select * from sellers;",
           connection_url: connection_url,
-          schema: "pger",
+          schema: "pger_test",
         ).to_a,
       ).to eq([])
     end

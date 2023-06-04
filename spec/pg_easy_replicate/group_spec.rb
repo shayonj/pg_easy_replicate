@@ -41,6 +41,10 @@ RSpec.describe(PgEasyReplicate::Group) do
             data_type: "timestamp without time zone",
           },
           {
+            column_name: "updated_at",
+            data_type: "timestamp without time zone",
+          },
+          {
             column_name: "started_at",
             data_type: "timestamp without time zone",
           },
@@ -132,6 +136,7 @@ RSpec.describe(PgEasyReplicate::Group) do
         schema_name: "foo",
         id: kind_of(Integer),
         started_at: kind_of(Time),
+        updated_at: kind_of(Time),
         table_names: "table1, table2",
       )
     end
@@ -159,6 +164,7 @@ RSpec.describe(PgEasyReplicate::Group) do
         schema_name: "foo",
         id: kind_of(Integer),
         started_at: kind_of(Time),
+        updated_at: kind_of(Time),
         table_names: "table1, table2",
       )
     end
@@ -174,7 +180,7 @@ RSpec.describe(PgEasyReplicate::Group) do
       )
       described_class.delete("test")
 
-      expect(described_class.find("test")).to eq(nil)
+      expect(described_class.find("test")).to be_nil
     end
   end
 end

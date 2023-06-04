@@ -12,6 +12,7 @@ require "pg_easy_replicate/query"
 require "pg_easy_replicate/group"
 require "pg_easy_replicate/cli"
 
+Sequel.default_timezone = :utc
 module PgEasyReplicate
   class Error < StandardError
   end

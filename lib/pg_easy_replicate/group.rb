@@ -13,6 +13,7 @@ module PgEasyReplicate
           column(:table_names, String, text: true)
           column(:schema_name, String)
           column(:created_at, Time, default: Sequel::CURRENT_TIMESTAMP)
+          column(:updated_at, Time, default: Sequel::CURRENT_TIMESTAMP)
           column(:started_at, Time, default: Sequel::CURRENT_TIMESTAMP)
           column(:completed_at, Time)
         end
@@ -39,6 +40,7 @@ module PgEasyReplicate
         groups.where(name: group_name).update(
           started_at: started_at&.utc,
           completed_at: completed_at&.utc,
+          updated_at: Time.now.utc,
         )
       rescue => e
         abort_with("Updating group entry failed: #{e.message}")
