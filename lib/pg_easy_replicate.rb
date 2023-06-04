@@ -65,6 +65,7 @@ module PgEasyReplicate
 
     def bootstrap(options)
       assert_config
+      setup_schema
       Group.create(options)
       # setup replication user
     end

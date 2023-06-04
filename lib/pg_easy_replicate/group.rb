@@ -5,8 +5,6 @@ module PgEasyReplicate
     extend Helper
     class << self
       def setup
-        PgEasyReplicate.setup_schema
-
         sql = <<~SQL
           CREATE TABLE groups (
             id serial PRIMARY KEY,

@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 RSpec.describe(PgEasyReplicate::Group) do
-  before { described_class.drop }
+  before do
+    PgEasyReplicate.setup_schema
+    described_class.drop
+  end
 
   describe ".setup" do
     it "creates the table" do
