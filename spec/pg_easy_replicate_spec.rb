@@ -10,8 +10,8 @@ RSpec.describe(PgEasyReplicate) do
       result = described_class.config
       expect(result).to eq(
         {
-          source_db_is_superuser: false,
-          target_db_is_superuser: false,
+          source_db_is_superuser: true,
+          target_db_is_superuser: true,
           source_db: [
             { name: "max_logical_replication_workers", setting: "4" },
             { name: "max_replication_slots", setting: "10" },
@@ -33,15 +33,15 @@ RSpec.describe(PgEasyReplicate) do
     describe ".assert_confg" do
       let(:source_db_config_without_logical) do
         {
-          source_db: [{ "name" => "wal_level", "setting" => "replication" }],
-          target_db: [{ "name" => "wal_level", "setting" => "logical" }],
+          source_db: [{ name: "wal_level", setting: "replication" }],
+          target_db: [{ name: "wal_level", setting: "logical" }],
         }
       end
 
       let(:target_db_config_without_logical) do
         {
-          source_db: [{ "name" => "wal_level", "setting" => "logical" }],
-          target_db: [{ "name" => "wal_level", "setting" => "replication" }],
+          source_db: [{ name: "wal_level", setting: "logical" }],
+          target_db: [{ name: "wal_level", setting: "replication" }],
         }
       end
 
@@ -67,8 +67,8 @@ RSpec.describe(PgEasyReplicate) do
         allow(described_class).to receive(:config).and_return(
           {
             source_db_is_superuser: false,
-            target_db: [{ "name" => "wal_level", "setting" => "logical" }],
-            source_db: [{ "name" => "wal_level", "setting" => "logical" }],
+            target_db: [{ name: "wal_level", setting: "logical" }],
+            source_db: [{ name: "wal_level", setting: "logical" }],
           },
         )
         expect { described_class.assert_config }.to raise_error(
@@ -81,8 +81,8 @@ RSpec.describe(PgEasyReplicate) do
           {
             source_db_is_superuser: true,
             target_db_is_superuser: false,
-            target_db: [{ "name" => "wal_level", "setting" => "logical" }],
-            source_db: [{ "name" => "wal_level", "setting" => "logical" }],
+            target_db: [{ name: "wal_level", setting: "logical" }],
+            source_db: [{ name: "wal_level", setting: "logical" }],
           },
         )
         expect { described_class.assert_config }.to raise_error(

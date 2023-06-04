@@ -114,7 +114,7 @@ module PgEasyReplicate
 
     def assert_wal_level_logical(db_config)
       db_config&.find do |r|
-        r.dig("name") == "wal_level" && r.dig("setting") == "logical"
+        r.dig(:name) == "wal_level" && r.dig(:setting) == "logical"
       end
     end
 
@@ -124,8 +124,8 @@ module PgEasyReplicate
           "select usesuper from pg_user where usename = '#{db_user(url)}';",
         connection_url: url,
       ).first[
-        "usesuper"
-      ] == "t"
+        :usesuper
+      ]
     end
   end
 end
