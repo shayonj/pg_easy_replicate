@@ -56,7 +56,7 @@ module PgEasyReplicate
       abort_with("User on target database should be a superuser")
     end
 
-    def bootstrap
+    def bootstrap(options)
       assert_config
       logger.info("Setting up schema")
       setup_schema
@@ -64,21 +64,28 @@ module PgEasyReplicate
       Group.setup
 
       logger.info("Setting up replication user on source database")
-      create_user(source_db_url)
+      create_user(conn_string: source_db_url, group_name: options[:group_name])
 
       logger.info("Setting up replication user on target database")
-      create_user(target_db_url)
+      create_user(conn_string: target_db_url, group_name: options[:group_name])
     rescue => e
       abort_with("Unable to bootstrap: #{e.message}")
     end
 
     def cleanup(options)
+      logger.info("Dropping groups table")
       Group.drop
       if options[:everything]
+        logger.info("Dropping schema")
         drop_schema
-        drop_user # TODO create user with group name?
+
+        logger.info("Dropping replication user on source database")
+        drop_user(conn_string: source_db_url, group_name: options[:group_name])
+
+        logger.info("Dropping replication user on target database")
+        drop_user(conn_string: target_db_url, group_name: options[:group_name])
+        # TODO drop publication and subscriptions from both DBs - if everything or sync
       end
-      # drop publication and subscriptions from both DBs - if everything or sync
     rescue => e
       abort_with("Unable to cleanup: #{e.message}")
     end
@@ -134,24 +141,19 @@ module PgEasyReplicate
       ]
     end
 
-    def create_user(conn_string)
+    def create_user(conn_string:, group_name:)
       password = connection_info(conn_string)[:user]
       sql = <<~SQL
-        drop role if exists #{internal_user_name};
-        create role #{internal_user_name} with password '#{password}' login superuser createdb createrole;
+        drop role if exists #{internal_user_name(group_name)};
+        create role #{internal_user_name(group_name)} with password '#{password}' login superuser createdb createrole;
       SQL
 
       Query.run(query: sql, connection_url: conn_string)
     end
 
-    def drop_user
-      sql = "drop role if exists #{internal_user_name};"
-
-      logger.info("Dropping replication user on source database")
-      Query.run(query: sql, connection_url: source_db_url)
-
-      logger.info("Dropping replication user on target database")
-      Query.run(query: sql, connection_url: target_db_url)
+    def drop_user(conn_string:, group_name:)
+      sql = "drop role if exists #{internal_user_name(group_name)};"
+      Query.run(query: sql, connection_url: conn_string)
     end
   end
 end

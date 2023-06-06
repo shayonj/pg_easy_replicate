@@ -18,8 +18,17 @@ module PgEasyReplicate
       "pger"
     end
 
-    def internal_user_name
-      "pger_replication_user"
+    def internal_user_name(group_name)
+      "pger_#{underscore(group_name)}"
+    end
+
+    def underscore(str)
+      str
+        .gsub(/::/, "/")
+        .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+        .gsub(/([a-z\d])([A-Z])/, '\1_\2')
+        .tr("-", "_")
+        .downcase
     end
 
     def test_env?

@@ -62,10 +62,10 @@ module DatabaseHelpers
     )
   end
 
-  def user_permissions(connection_url)
+  def user_permissions(connection_url:, group_name:)
     PgEasyReplicate::Query.run(
       query:
-        "select rolcreatedb, rolcreaterole, rolcanlogin, rolsuper from pg_authid where rolname = 'pger_replication_user';",
+        "select rolcreatedb, rolcreaterole, rolcanlogin, rolsuper from pg_authid where rolname = 'pger_#{group_name}';",
       connection_url: connection_url,
     )
   end

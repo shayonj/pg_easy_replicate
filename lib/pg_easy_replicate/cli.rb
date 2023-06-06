@@ -14,10 +14,14 @@ module PgEasyReplicate
       puts "✅ Config is looking good."
     end
 
+    method_option :group_name,
+                  aliases: "-g",
+                  required: true,
+                  desc: "Name of the group to provision"
     desc "bootstrap",
          "Sets up temporary tables for information required during runtime"
     def bootstrap
-      PgEasyReplicate.bootstrap
+      PgEasyReplicate.bootstrap(options)
     end
 
     desc "cleanup", "Cleans up all bootstrapped data for the respective group"
@@ -41,7 +45,7 @@ module PgEasyReplicate
     method_option :group_name,
                   aliases: "-g",
                   required: true,
-                  desc: "Name of the group previously provisioned"
+                  desc: "Name of the group to provision"
     method_option :group_name,
                   aliases: "-g",
                   required: true,

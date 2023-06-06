@@ -109,10 +109,12 @@ RSpec.describe(PgEasyReplicate) do
     end
 
     describe ".bootstrap" do
-      after { described_class.cleanup({ everything: true }) }
+      after do
+        described_class.cleanup({ everything: true, group_name: "cluster1" })
+      end
 
       it "successfully" do
-        described_class.bootstrap
+        described_class.bootstrap({ group_name: "cluster1" })
 
         # Check schema exists
         expect(get_schema).to eq([{ schema_name: "pger" }])
@@ -121,7 +123,12 @@ RSpec.describe(PgEasyReplicate) do
         expect(groups_table_exists?).to eq([{ table_name: "groups" }])
 
         # Check user on source database
-        expect(user_permissions(connection_url)).to eq(
+        expect(
+          user_permissions(
+            connection_url: connection_url,
+            group_name: "cluster1",
+          ),
+        ).to eq(
           [
             {
               rolcanlogin: true,
@@ -133,7 +140,12 @@ RSpec.describe(PgEasyReplicate) do
         )
 
         # Check user exists on target database
-        expect(user_permissions(target_connection_url)).to eq(
+        expect(
+          user_permissions(
+            connection_url: target_connection_url,
+            group_name: "cluster1",
+          ),
+        ).to eq(
           [
             {
               rolcanlogin: true,
@@ -148,8 +160,8 @@ RSpec.describe(PgEasyReplicate) do
 
     describe ".cleanup" do
       it "successfully with everything" do
-        described_class.bootstrap
-        described_class.cleanup({ everything: true })
+        described_class.bootstrap({ group_name: "cluster1" })
+        described_class.cleanup({ everything: true, group_name: "cluster1" })
 
         # Check schema exists
         expect(get_schema).to eq([])
@@ -158,10 +170,20 @@ RSpec.describe(PgEasyReplicate) do
         expect(groups_table_exists?).to eq([])
 
         # Check user on source database
-        expect(user_permissions(connection_url)).to eq([])
+        expect(
+          user_permissions(
+            connection_url: connection_url,
+            group_name: "cluster1",
+          ),
+        ).to eq([])
 
         # Check user exists on target database
-        expect(user_permissions(target_connection_url)).to eq([])
+        expect(
+          user_permissions(
+            connection_url: target_connection_url,
+            group_name: "cluster1",
+          ),
+        ).to eq([])
       end
     end
   end
