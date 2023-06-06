@@ -16,21 +16,8 @@ module PgEasyReplicate
 
     desc "bootstrap",
          "Sets up temporary tables for information required during runtime"
-    method_option :group_name,
-                  aliases: "-g",
-                  required: true,
-                  desc:
-                    "Name of the grouping for this collection of source and target DB"
-    method_option :schema_name,
-                  aliases: "-s",
-                  desc:
-                    "Name of the schema tables are in, only required if passsing list of tables"
-    method_option :tables,
-                  aliases: "-t",
-                  desc:
-                    "Comma separated list of table names. Default: All tables"
     def bootstrap
-      PgEasyReplicate.bootstrap(options)
+      PgEasyReplicate.bootstrap
     end
 
     desc "cleanup", "Cleans up all bootstrapped data for the respective group"
@@ -55,7 +42,21 @@ module PgEasyReplicate
                   aliases: "-g",
                   required: true,
                   desc: "Name of the group previously provisioned"
+    method_option :group_name,
+                  aliases: "-g",
+                  required: true,
+                  desc:
+                    "Name of the grouping for this collection of source and target DB"
+    method_option :schema_name,
+                  aliases: "-s",
+                  desc:
+                    "Name of the schema tables are in, only required if passsing list of tables"
+    method_option :tables,
+                  aliases: "-t",
+                  desc:
+                    "Comma separated list of table names. Default: All tables"
     def start_sync
+      PgEasyReplicate.bootstrap
       PgEasyReplicate::Orchestrate.start_sync(options[:group_name])
     end
 

@@ -31,19 +31,11 @@ module PgEasyReplicate
           {
             source_db_is_superuser: is_super_user?(source_db_url),
             target_db_is_superuser: is_super_user?(target_db_url),
-            source_db:
-              PgEasyReplicate::Query.run(
-                query: q,
-                connection_url: source_db_url,
-              ),
-            target_db:
-              PgEasyReplicate::Query.run(
-                query: q,
-                connection_url: target_db_url,
-              ),
+            source_db: Query.run(query: q, connection_url: source_db_url),
+            target_db: Query.run(query: q, connection_url: target_db_url),
           }
-        rescue PG::ConnectionBad, PG::Error => e
-          abort_with("Unable to connect: #{e.message}")
+        rescue => e
+          abort_with("Unable to check config: #{e.message}")
         end
     end
 
@@ -64,21 +56,35 @@ module PgEasyReplicate
       abort_with("User on target database should be a superuser")
     end
 
-    def bootstrap(options)
+    def bootstrap
       assert_config
+      logger.info("Setting up schema")
       setup_schema
-      Group.create(options)
-      # setup replication user
+      logger.info("Setting up groups tables")
+      Group.setup
+
+      logger.info("Setting up replication user on source database")
+      create_user(source_db_url)
+
+      logger.info("Setting up replication user on target database")
+      create_user(target_db_url)
+    rescue => e
+      abort_with("Unable to bootstrap: #{e.message}")
     end
 
     def cleanup(options)
-      Group.drop(options)
-      drop_schema if options[:everything]
+      Group.drop
+      if options[:everything]
+        drop_schema
+        drop_user # TODO create user with group name?
+      end
       # drop publication and subscriptions from both DBs - if everything or sync
+    rescue => e
+      abort_with("Unable to cleanup: #{e.message}")
     end
 
     def drop_schema
-      PgEasyReplicate::Query.run(
+      Query.run(
         query: "DROP SCHEMA IF EXISTS #{internal_schema_name} CASCADE",
         connection_url: source_db_url,
         schema: internal_schema_name,
@@ -92,7 +98,7 @@ module PgEasyReplicate
         grant create on schema #{internal_schema_name} to #{db_user(source_db_url)};
       SQL
 
-      PgEasyReplicate::Query.run(
+      Query.run(
         query: sql,
         connection_url: source_db_url,
         schema: internal_schema_name,
@@ -119,13 +125,33 @@ module PgEasyReplicate
     end
 
     def is_super_user?(url)
-      PgEasyReplicate::Query.run(
+      Query.run(
         query:
           "select usesuper from pg_user where usename = '#{db_user(url)}';",
         connection_url: url,
       ).first[
         :usesuper
       ]
+    end
+
+    def create_user(conn_string)
+      password = connection_info(conn_string)[:user]
+      sql = <<~SQL
+        drop role if exists #{internal_user_name};
+        create role #{internal_user_name} with password '#{password}' login superuser createdb createrole;
+      SQL
+
+      Query.run(query: sql, connection_url: conn_string)
+    end
+
+    def drop_user
+      sql = "drop role if exists #{internal_user_name};"
+
+      logger.info("Dropping replication user on source database")
+      Query.run(query: sql, connection_url: source_db_url)
+
+      logger.info("Dropping replication user on target database")
+      Query.run(query: sql, connection_url: target_db_url)
     end
   end
 end

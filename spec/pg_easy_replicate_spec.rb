@@ -95,14 +95,7 @@ RSpec.describe(PgEasyReplicate) do
       it "sets up the schema" do
         described_class.setup_schema
 
-        r =
-          PgEasyReplicate::Query.run(
-            query:
-              "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '#{PgEasyReplicate.internal_schema_name}';",
-            connection_url: connection_url,
-            schema: PgEasyReplicate.internal_schema_name,
-          )
-        expect(r).to eq([{ schema_name: "pger" }])
+        expect(get_schema).to eq([{ schema_name: "pger" }])
       end
     end
 
@@ -111,14 +104,64 @@ RSpec.describe(PgEasyReplicate) do
         described_class.setup_schema
         described_class.drop_schema
 
-        r =
-          PgEasyReplicate::Query.run(
-            query:
-              "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '#{PgEasyReplicate.internal_schema_name}';",
-            connection_url: connection_url,
-            schema: PgEasyReplicate.internal_schema_name,
-          )
-        expect(r).to eq([])
+        expect(get_schema).to eq([])
+      end
+    end
+
+    describe ".bootstrap" do
+      after { described_class.cleanup({ everything: true }) }
+
+      it "successfully" do
+        described_class.bootstrap
+
+        # Check schema exists
+        expect(get_schema).to eq([{ schema_name: "pger" }])
+
+        # Check table exists
+        expect(groups_table_exists?).to eq([{ table_name: "groups" }])
+
+        # Check user on source database
+        expect(user_permissions(connection_url)).to eq(
+          [
+            {
+              rolcanlogin: true,
+              rolcreatedb: true,
+              rolcreaterole: true,
+              rolsuper: true,
+            },
+          ],
+        )
+
+        # Check user exists on target database
+        expect(user_permissions(target_connection_url)).to eq(
+          [
+            {
+              rolcanlogin: true,
+              rolcreatedb: true,
+              rolcreaterole: true,
+              rolsuper: true,
+            },
+          ],
+        )
+      end
+    end
+
+    describe ".cleanup" do
+      it "successfully with everything" do
+        described_class.bootstrap
+        described_class.cleanup({ everything: true })
+
+        # Check schema exists
+        expect(get_schema).to eq([])
+
+        # Check table exists
+        expect(groups_table_exists?).to eq([])
+
+        # Check user on source database
+        expect(user_permissions(connection_url)).to eq([])
+
+        # Check user exists on target database
+        expect(user_permissions(target_connection_url)).to eq([])
       end
     end
   end

@@ -5,8 +5,8 @@ module PgEasyReplicate
     extend Helper
     class << self
       def setup
-        conn =
-          PgEasyReplicate::Query.connect(source_db_url, internal_schema_name)
+        conn = Query.connect(source_db_url, internal_schema_name)
+        return if conn.table_exists?("groups")
         conn.create_table("groups") do
           primary_key(:id)
           column(:name, String, null: false)
@@ -20,10 +20,7 @@ module PgEasyReplicate
       end
 
       def drop
-        PgEasyReplicate::Query.connect(
-          source_db_url,
-          internal_schema_name,
-        ).drop_table?("groups")
+        Query.connect(source_db_url, internal_schema_name).drop_table?("groups")
       end
 
       def create(options)
@@ -61,8 +58,7 @@ module PgEasyReplicate
       private
 
       def groups
-        conn =
-          PgEasyReplicate::Query.connect(source_db_url, internal_schema_name)
+        conn = Query.connect(source_db_url, internal_schema_name)
         conn[:groups]
       end
     end

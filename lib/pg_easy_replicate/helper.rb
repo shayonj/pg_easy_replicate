@@ -18,6 +18,10 @@ module PgEasyReplicate
       "pger"
     end
 
+    def internal_user_name
+      "pger_replication_user"
+    end
+
     def test_env?
       ENV.fetch("RACK_ENV", nil) == "test"
     end
@@ -30,6 +34,7 @@ module PgEasyReplicate
         host: conn_info.find { |k| k[:keyword] == "host" }[:val],
         port: conn_info.find { |k| k[:keyword] == "port" }[:val],
         options: conn_info.find { |k| k[:keyword] == "options" }[:val],
+        password: conn_info.find { |k| k[:keyword] == "password" }[:val],
       }
     end
 

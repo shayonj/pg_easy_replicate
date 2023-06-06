@@ -9,6 +9,10 @@ module DatabaseHelpers
     "postgres://jamesbond:jamesbond@localhost:5432/postgres"
   end
 
+  def target_connection_url
+    "postgres://jamesbond:jamesbond@localhost:5433/postgres"
+  end
+
   def new_dummy_table_sql
     <<~SQL
       CREATE SCHEMA IF NOT EXISTS #{test_schema};
@@ -40,12 +44,38 @@ module DatabaseHelpers
     end
   end
 
+  def get_schema
+    PgEasyReplicate::Query.run(
+      query:
+        "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '#{PgEasyReplicate.internal_schema_name}';",
+      connection_url: connection_url,
+      schema: PgEasyReplicate.internal_schema_name,
+    )
+  end
+
+  def groups_table_exists?
+    PgEasyReplicate::Query.run(
+      query:
+        "SELECT table_name FROM information_schema.tables WHERE  table_name = 'groups'",
+      connection_url: connection_url,
+      schema: PgEasyReplicate.internal_schema_name,
+    )
+  end
+
+  def user_permissions(connection_url)
+    PgEasyReplicate::Query.run(
+      query:
+        "select rolcreatedb, rolcreaterole, rolcanlogin, rolsuper from pg_authid where rolname = 'pger_replication_user';",
+      connection_url: connection_url,
+    )
+  end
+
   def self.populate_env_vars
     ENV[
       "SOURCE_DB_URL"
     ] = "postgres://jamesbond:jamesbond@localhost:5432/postgres"
     ENV[
       "TARGET_DB_URL"
-    ] = "postgres://jamesbond:jamesbond@localhost:5432/postgres"
+    ] = "postgres://jamesbond:jamesbond@localhost:5433/postgres"
   end
 end
