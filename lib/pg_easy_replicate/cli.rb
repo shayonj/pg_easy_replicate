@@ -31,7 +31,8 @@ module PgEasyReplicate
                   desc: "Name of the group previously provisioned"
     method_option :everything,
                   aliases: "-e",
-                  desc: "Cleans up all bootstrap tables"
+                  desc:
+                    "Cleans up all bootstrap tables, users and any publication/subscription"
     method_option :sync,
                   aliases: "-s",
                   desc:

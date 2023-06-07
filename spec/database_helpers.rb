@@ -13,6 +13,15 @@ module DatabaseHelpers
     "postgres://jamesbond:jamesbond@localhost:5433/postgres"
   end
 
+  def docker_compose_target_connection_url
+    "postgres://jamesbond:jamesbond@target_db/postgres"
+  end
+
+  def docker_compose_source_connection_url
+    return connection_url if ENV["GITHUB_WORKFLOW"] # if running in CI/github actions
+    "postgres://jamesbond:jamesbond@source_db/postgres"
+  end
+
   def new_dummy_table_sql
     <<~SQL
       CREATE SCHEMA IF NOT EXISTS #{test_schema};
@@ -36,12 +45,27 @@ module DatabaseHelpers
     conn.run(
       "CREATE SCHEMA IF NOT EXISTS #{test_schema}; SET search_path TO #{test_schema};",
     )
+
     return if conn.table_exists?("sellers")
     conn.create_table("sellers") do
       primary_key(:id)
       column(:name, String)
       column(:last_login, Time)
     end
+
+    return if conn.table_exists?("items")
+    conn.create_table("items") do
+      primary_key(:id)
+      column(:name, String)
+      column(:last_purchase_at, Time)
+    end
+  end
+
+  def teardown_tables
+    PgEasyReplicate::Query.run(
+      query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
+      connection_url: connection_url,
+    )
   end
 
   def get_schema

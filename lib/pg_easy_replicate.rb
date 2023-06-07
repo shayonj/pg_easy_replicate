@@ -9,6 +9,7 @@ require "sequel"
 require "pg_easy_replicate/helper"
 require "pg_easy_replicate/version"
 require "pg_easy_replicate/query"
+require "pg_easy_replicate/orchestrate"
 require "pg_easy_replicate/group"
 require "pg_easy_replicate/cli"
 
@@ -84,6 +85,11 @@ module PgEasyReplicate
 
         logger.info("Dropping replication user on target database")
         drop_user(conn_string: target_db_url, group_name: options[:group_name])
+
+        Orchestrate.drop_publication(
+          group_name: options[:group_name],
+          conn_string: source_db_url,
+        )
         # TODO drop publication and subscriptions from both DBs - if everything or sync
       end
     rescue => e

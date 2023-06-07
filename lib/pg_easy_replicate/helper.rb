@@ -6,6 +6,10 @@ module PgEasyReplicate
       ENV.fetch("SOURCE_DB_URL", nil)
     end
 
+    def secondary_source_db_url
+      ENV.fetch("SECONDARY_SOURCE_DB_URL", nil)
+    end
+
     def target_db_url
       ENV.fetch("TARGET_DB_URL", nil)
     end
@@ -20,6 +24,14 @@ module PgEasyReplicate
 
     def internal_user_name(group_name)
       "pger_#{underscore(group_name)}"
+    end
+
+    def publication_name(group_name)
+      "pger_publication_#{underscore(group_name)}"
+    end
+
+    def subscription_name(group_name)
+      "pger_subscription_#{underscore(group_name)}"
     end
 
     def underscore(str)

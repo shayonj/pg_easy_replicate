@@ -12,6 +12,9 @@ services:
       - "postgres"
       - "-c"
       - "wal_level=logical"
+    networks:
+      localnet:
+
   target_db:
     image: postgres:12-alpine
     ports:
@@ -24,3 +27,8 @@ services:
       - "postgres"
       - "-c"
       - "wal_level=logical"
+    networks:
+      localnet:
+
+networks:
+  localnet:
