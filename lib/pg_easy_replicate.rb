@@ -85,10 +85,17 @@ module PgEasyReplicate
 
         logger.info("Dropping replication user on target database")
         drop_user(conn_string: target_db_url, group_name: options[:group_name])
+      end
 
+      if options[:everything] || options[:sync]
         Orchestrate.drop_publication(
           group_name: options[:group_name],
           conn_string: source_db_url,
+        )
+
+        Orchestrate.drop_subscription(
+          group_name: options[:group_name],
+          target_conn_string: target_db_url,
         )
         # TODO drop publication and subscriptions from both DBs - if everything or sync
       end

@@ -113,7 +113,7 @@ RSpec.describe(PgEasyReplicate) do
         described_class.cleanup({ everything: true, group_name: "cluster1" })
       end
 
-      it "successfully" do
+      it "successfully with everything" do
         described_class.bootstrap({ group_name: "cluster1" })
 
         # Check schema exists
@@ -161,6 +161,7 @@ RSpec.describe(PgEasyReplicate) do
     describe ".cleanup" do
       it "successfully with everything" do
         described_class.bootstrap({ group_name: "cluster1" })
+        PgEasyReplicate::Orchestrate.start_sync({ group_name: "cluster1" })
         described_class.cleanup({ everything: true, group_name: "cluster1" })
 
         # Check schema exists
@@ -184,6 +185,11 @@ RSpec.describe(PgEasyReplicate) do
             group_name: "cluster1",
           ),
         ).to eq([])
+
+        expect(pg_publications(connection_url: connection_url)).to eq([])
+        expect(pg_subscriptions(connection_url: target_connection_url)).to eq(
+          [],
+        )
       end
     end
   end

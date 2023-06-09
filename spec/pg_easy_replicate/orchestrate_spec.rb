@@ -17,12 +17,10 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         group_name: "cluster1",
         conn_string: connection_url,
       )
-      r =
-        PgEasyReplicate::Query.run(
-          query: "select pubname from pg_catalog.pg_publication",
-          connection_url: connection_url,
-        )
-      expect(r).to eq([{ pubname: "pger_publication_cluster1" }])
+
+      expect(pg_publications(connection_url: connection_url)).to eq(
+        [{ pubname: "pger_publication_cluster1" }],
+      )
     end
   end
 
@@ -36,12 +34,8 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         group_name: "cluster1",
         conn_string: connection_url,
       )
-      r =
-        PgEasyReplicate::Query.run(
-          query: "select pubname from pg_catalog.pg_publication",
-          connection_url: connection_url,
-        )
-      expect(r).to eq([])
+
+      expect(pg_publications(connection_url: connection_url)).to eq([])
     end
   end
 
@@ -66,12 +60,8 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         schema: test_schema,
         conn_string: connection_url,
       )
-      r =
-        PgEasyReplicate::Query.run(
-          query: "select * from pg_publication_tables;",
-          connection_url: connection_url,
-        )
-      expect(r).to eq(
+
+      expect(pg_publication_tables(connection_url: connection_url)).to eq(
         [
           {
             pubname: "pger_publication_cluster1",
@@ -94,12 +84,8 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         conn_string: connection_url,
         tables: "sellers,",
       )
-      r =
-        PgEasyReplicate::Query.run(
-          query: "select * from pg_publication_tables;",
-          connection_url: connection_url,
-        )
-      expect(r).to eq(
+
+      expect(pg_publication_tables(connection_url: connection_url)).to eq(
         [
           {
             pubname: "pger_publication_cluster1",
@@ -149,13 +135,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         target_conn_string: target_connection_url,
       )
 
-      r =
-        PgEasyReplicate::Query.run(
-          query:
-            "select subname, subpublications, subslotname, subenabled from pg_subscription;",
-          connection_url: target_connection_url,
-        )
-      expect(r).to eq(
+      expect(pg_subscriptions(connection_url: target_connection_url)).to eq(
         [
           {
             subenabled: true,
@@ -194,13 +174,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         target_conn_string: target_connection_url,
       )
 
-      r =
-        PgEasyReplicate::Query.run(
-          query:
-            "select subname, subpublications, subslotname, subenabled from pg_subscription;",
-          connection_url: target_connection_url,
-        )
-      expect(r).to eq([])
+      expect(pg_subscriptions(connection_url: target_connection_url)).to eq([])
     end
   end
 
@@ -217,20 +191,11 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       described_class.start_sync({ group_name: "cluster1" })
 
-      r =
-        PgEasyReplicate::Query.run(
-          query: "select pubname from pg_catalog.pg_publication",
-          connection_url: connection_url,
-        )
-      expect(r).to eq([{ pubname: "pger_publication_cluster1" }])
+      expect(pg_publications(connection_url: connection_url)).to eq(
+        [{ pubname: "pger_publication_cluster1" }],
+      )
 
-      r =
-        PgEasyReplicate::Query.run(
-          query:
-            "select subname, subpublications, subslotname, subenabled from pg_subscription;",
-          connection_url: target_connection_url,
-        )
-      expect(r).to eq(
+      expect(pg_subscriptions(connection_url: target_connection_url)).to eq(
         [
           {
             subenabled: true,

@@ -94,6 +94,28 @@ module DatabaseHelpers
     )
   end
 
+  def pg_subscriptions(connection_url:)
+    PgEasyReplicate::Query.run(
+      query:
+        "select subname, subpublications, subslotname, subenabled from pg_subscription;",
+      connection_url: connection_url,
+    )
+  end
+
+  def pg_publication_tables(connection_url:)
+    PgEasyReplicate::Query.run(
+      query: "select * from pg_publication_tables;",
+      connection_url: connection_url,
+    )
+  end
+
+  def pg_publications(connection_url:)
+    PgEasyReplicate::Query.run(
+      query: "select pubname from pg_catalog.pg_publication",
+      connection_url: connection_url,
+    )
+  end
+
   def self.populate_env_vars
     ENV[
       "SOURCE_DB_URL"

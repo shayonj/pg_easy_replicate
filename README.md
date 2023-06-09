@@ -2,7 +2,7 @@
 
 **⚠️ NOTE: This project is currently WIP**
 
-`pg_easy_replicate` is an orchestrator tool that simplifies the process of setting up logical replication between two PostgreSQL databases. It comes with a CLI and a web interface. `pg_easy_replicate` also supports switchover. After the source (primary database is fully replicating, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for upgrading between major version PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
+`pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up logical replication between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database is fully replicating, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for upgrading between major version PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
 
 - [pg_easy_replicate](#pg-easy-replicate)
   - [Installation](#installation)
