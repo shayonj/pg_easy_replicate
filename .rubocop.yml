@@ -151,9 +151,6 @@ Style/TrailingCommaInHashLiteral:
 Style/TrailingUnderscoreVariable:
   Enabled: false
 
-Style/WordArray:
-  EnforcedStyle: brackets
-
 Style/ZeroLengthPredicate:
   Enabled: false
 

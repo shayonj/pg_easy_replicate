@@ -5,15 +5,25 @@ module PgEasyReplicate
     extend Helper
 
     class << self
-      def run(query:, connection_url:, schema: nil)
+      def run(query:, connection_url:, schema: nil, transaction: true)
         conn = connect(connection_url)
-        conn.transaction do
+        if transaction
+          r =
+            conn.transaction do
+              conn.run("SET search_path to #{schema}") if schema
+              conn.run("SET statement_timeout to '5s'")
+              conn.fetch(query).to_a
+            end
+        else
           conn.run("SET search_path to #{schema}") if schema
           conn.run("SET statement_timeout to '5s'")
-          conn.fetch(query).to_a
+          r = conn.fetch(query).to_a
         end
+        conn.disconnect
+        r
       ensure
         conn&.fetch("RESET statement_timeout")
+        conn&.disconnect
       end
 
       def connect(connection_url, schema = nil)
