@@ -50,6 +50,7 @@ https://hub.docker.com/r/shayonj/pg_easy_replicate
 - PostgreSQL 10 and later
 - Ruby 2.7 and later
 - Database user should have permissions for `SUPERUSER`
+- Both databases should have the same schema
 
 ## Limits
 

@@ -118,6 +118,8 @@ module PgEasyReplicate
             "Subscription creation failed, please ensure both databases are in the same network region: #{e.message}",
           )
         end
+
+        raise
       end
 
       def drop_subscription(group_name:, target_conn_string:)

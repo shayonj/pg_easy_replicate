@@ -5,8 +5,14 @@ module PgEasyReplicate
     extend Helper
 
     class << self
-      def run(query:, connection_url:, schema: nil, transaction: true)
-        conn = connect(connection_url)
+      def run(
+        query:,
+        connection_url:,
+        schema: nil,
+        user: nil,
+        transaction: true
+      )
+        conn = connect(connection_url, user: user)
         if transaction
           r =
             conn.transaction do
@@ -26,10 +32,11 @@ module PgEasyReplicate
         conn&.disconnect
       end
 
-      def connect(connection_url, schema = nil)
+      def connect(connection_url, schema = nil, user: nil)
         c =
           Sequel.connect(
             connection_url,
+            user: user || db_user(connection_url),
             logger: ENV.fetch("DEBUG", nil) ? logger : nil,
             search_path: schema,
           )
