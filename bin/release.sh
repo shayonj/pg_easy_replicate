@@ -15,14 +15,14 @@ echo "=== Sleeping for 5s ===="
 sleep 5
 
 echo "=== Building Image ===="
-docker build . --build-arg VERSION="$VERSION" -t shayonj/pg-osc:"$VERSION"
+docker build . --build-arg VERSION="$VERSION" -t shayonj/pg_easy_replicate:"$VERSION"
 
 echo "=== Tagging Image ===="
-docker image tag shayonj/pg-osc:"$VERSION" shayonj/pg-osc:latest
+docker image tag shayonj/pg_easy_replicate:"$VERSION" shayonj/pg_easy_replicate:latest
 
 echo "=== Pushing Image ===="
-docker push shayonj/pg-osc:"$VERSION"
-docker push shayonj/pg-osc:latest
+docker push shayonj/pg_easy_replicate:"$VERSION"
+docker push shayonj/pg_easy_replicate:latest
 
 echo "=== Cleaning up ===="
 rm pg_easy_replicate-"$VERSION".gem
