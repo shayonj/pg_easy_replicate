@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 RSpec.describe(PgEasyReplicate::Stats) do
-  before { setup_tables }
-  after { teardown_tables }
-
   describe ".lag_stats" do
     before do
+      setup_tables
       PgEasyReplicate.bootstrap({ group_name: "cluster1" })
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
-      PgEasyReplicate::Orchestrate.start_sync({ group_name: "cluster1" })
+      PgEasyReplicate::Orchestrate.start_sync(
+        { group_name: "cluster1", schema: test_schema },
+      )
     end
 
     after do
@@ -19,6 +19,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
         target_conn_string: target_connection_url,
       )
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      teardown_tables
     end
 
     it "successfully" do
@@ -48,10 +49,13 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
   describe ".pg_replication_slots" do
     before do
+      setup_tables
       PgEasyReplicate.bootstrap({ group_name: "cluster1" })
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
-      PgEasyReplicate::Orchestrate.start_sync({ group_name: "cluster1" })
+      PgEasyReplicate::Orchestrate.start_sync(
+        { group_name: "cluster1", schema: test_schema },
+      )
     end
 
     after do
@@ -61,6 +65,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
         target_conn_string: target_connection_url,
       )
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      teardown_tables
     end
 
     it "successfully" do
@@ -83,7 +88,8 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
   describe ".replication_stats" do
     before do
-      PgEasyReplicate.bootstrap({ group_name: "cluster1", schema: test_schema })
+      setup_tables
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
@@ -98,6 +104,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
         target_conn_string: target_connection_url,
       )
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      teardown_tables
     end
 
     it "successfully" do
@@ -121,7 +128,8 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
   describe ".replication_stats_count_by_state" do
     before do
-      PgEasyReplicate.bootstrap({ group_name: "cluster1", schema: test_schema })
+      setup_tables
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
@@ -136,6 +144,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
         target_conn_string: target_connection_url,
       )
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      teardown_tables
     end
 
     it "successfully" do
@@ -150,7 +159,8 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
   describe ".message_lsn_receipts" do
     before do
-      PgEasyReplicate.bootstrap({ group_name: "cluster1", schema: test_schema })
+      setup_tables
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
@@ -165,6 +175,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
         target_conn_string: target_connection_url,
       )
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      teardown_tables
     end
 
     it "successfully" do
@@ -183,7 +194,8 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
   describe ".object" do
     before do
-      PgEasyReplicate.bootstrap({ group_name: "cluster1", schema: test_schema })
+      setup_tables
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
@@ -198,6 +210,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
         target_conn_string: target_connection_url,
       )
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      teardown_tables
     end
 
     it "successfully" do
@@ -209,6 +222,9 @@ RSpec.describe(PgEasyReplicate::Stats) do
           replication_stats
           replication_stats_count_by_state
           message_lsn_receipts
+          sync_started_at
+          sync_failed_at
+          switchover_completed_at
         ],
       )
     end

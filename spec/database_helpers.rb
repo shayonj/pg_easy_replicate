@@ -44,9 +44,14 @@ module DatabaseHelpers
     PgEasyReplicate::Query.run(
       query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
       connection_url: connection_url,
+      user: "jamesbond",
     )
 
-    conn = PgEasyReplicate::Query.connect(connection_url)
+    conn =
+      PgEasyReplicate::Query.connect(
+        connection_url: connection_url,
+        user: "jamesbond",
+      )
     conn.run(
       "CREATE SCHEMA IF NOT EXISTS #{test_schema}; SET search_path TO #{test_schema};",
     )
@@ -64,17 +69,21 @@ module DatabaseHelpers
       column(:name, String)
       column(:last_purchase_at, Time)
     end
+  ensure
+    conn&.disconnect
   end
 
   def teardown_tables
     PgEasyReplicate::Query.run(
       query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
       connection_url: connection_url,
+      user: "jamesbond",
     )
 
     PgEasyReplicate::Query.run(
       query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
       connection_url: target_connection_url,
+      user: "jamesbond",
     )
   end
 
@@ -84,6 +93,7 @@ module DatabaseHelpers
         "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '#{PgEasyReplicate.internal_schema_name}';",
       connection_url: connection_url,
       schema: PgEasyReplicate.internal_schema_name,
+      user: "jamesbond",
     )
   end
 
@@ -93,14 +103,16 @@ module DatabaseHelpers
         "SELECT table_name FROM information_schema.tables WHERE  table_name = 'groups'",
       connection_url: connection_url,
       schema: PgEasyReplicate.internal_schema_name,
+      user: "jamesbond",
     )
   end
 
   def user_permissions(connection_url:, group_name:)
     PgEasyReplicate::Query.run(
       query:
-        "select rolcreatedb, rolcreaterole, rolcanlogin, rolsuper from pg_authid where rolname = 'pger_#{group_name}';",
+        "select rolcreatedb, rolcreaterole, rolcanlogin, rolsuper from pg_authid where rolname = 'pger_su';",
       connection_url: connection_url,
+      user: "jamesbond",
     )
   end
 
@@ -109,6 +121,7 @@ module DatabaseHelpers
       query:
         "select subname, subpublications, subslotname, subenabled from pg_subscription;",
       connection_url: connection_url,
+      user: "jamesbond",
     )
   end
 
@@ -116,6 +129,7 @@ module DatabaseHelpers
     PgEasyReplicate::Query.run(
       query: "select * from pg_publication_tables;",
       connection_url: connection_url,
+      user: "jamesbond",
     )
   end
 
@@ -123,6 +137,7 @@ module DatabaseHelpers
     PgEasyReplicate::Query.run(
       query: "select pubname from pg_catalog.pg_publication",
       connection_url: connection_url,
+      user: "jamesbond",
     )
   end
 

@@ -15,6 +15,7 @@ module PgEasyReplicate
       def object(group_name)
         PgEasyReplicate.assert_config
         stats = replication_stats(group_name)
+        group = Group.find(group_name)
         {
           lag_stats: lag_stats(group_name),
           replication_slots: pg_replication_slots(group_name),
@@ -22,6 +23,9 @@ module PgEasyReplicate
           replication_stats_count_by_state:
             replication_stats_count_by_state(stats),
           message_lsn_receipts: message_lsn_receipts(group_name),
+          sync_started_at: group[:started_at],
+          sync_failed_at: group[:failed_at],
+          switchover_completed_at: group[:switchover_completed_at],
         }
       end
 
@@ -52,11 +56,7 @@ module PgEasyReplicate
           WHERE application_name = '#{subscription_name(group_name)}';
         SQL
 
-        Query.run(
-          query: sql,
-          connection_url: source_db_url,
-          user: internal_user_name(group_name),
-        )
+        Query.run(query: sql, connection_url: source_db_url)
       end
 
       def pg_replication_slots(group_name)
@@ -64,11 +64,7 @@ module PgEasyReplicate
          select * from pg_replication_slots WHERE slot_name = '#{subscription_name(group_name)}';
         SQL
 
-        Query.run(
-          query: sql,
-          connection_url: source_db_url,
-          user: internal_user_name(group_name),
-        )
+        Query.run(query: sql, connection_url: source_db_url)
       end
 
       def replication_stats(group_name)
@@ -86,16 +82,23 @@ module PgEasyReplicate
         SQL
 
         Query
-          .run(
-            query: sql,
-            connection_url: target_db_url,
-            user: internal_user_name(group_name),
-          )
+          .run(query: sql, connection_url: target_db_url)
           .each do |obj|
             obj[:replication_state] = REPLICATION_STATE_MAP[
               obj[:replication_state]
             ]
           end
+      end
+
+      def all_tables_replicating?(group_name)
+        result =
+          replication_stats(group_name)
+            .each
+            .with_object(Hash.new(0)) do |state, counts|
+              counts[state[:replication_state]] += 1
+            end
+        result.keys.uniq.count == 1 &&
+          result.keys.first == REPLICATION_STATE_MAP["r"]
       end
 
       def replication_stats_count_by_state(stats)
@@ -118,11 +121,7 @@ module PgEasyReplicate
             pg_catalog.pg_stat_subscription
           WHERE subname = '#{subscription_name(group_name)}'
         SQL
-        Query.run(
-          query: sql,
-          connection_url: target_db_url,
-          user: internal_user_name(group_name),
-        )
+        Query.run(query: sql, connection_url: target_db_url)
       end
     end
   end

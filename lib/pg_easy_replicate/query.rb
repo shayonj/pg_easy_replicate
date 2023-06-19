@@ -8,11 +8,12 @@ module PgEasyReplicate
       def run(
         query:,
         connection_url:,
+        user: internal_user_name,
         schema: nil,
-        user: nil,
         transaction: true
       )
-        conn = connect(connection_url, user: user)
+        conn =
+          connect(connection_url: connection_url, schema: schema, user: user)
         if transaction
           r =
             conn.transaction do
@@ -32,11 +33,11 @@ module PgEasyReplicate
         conn&.disconnect
       end
 
-      def connect(connection_url, schema = nil, user: nil)
+      def connect(connection_url:, user: internal_user_name, schema: nil)
         c =
           Sequel.connect(
             connection_url,
-            user: user || db_user(connection_url),
+            user: user,
             logger: ENV.fetch("DEBUG", nil) ? logger : nil,
             search_path: schema,
           )

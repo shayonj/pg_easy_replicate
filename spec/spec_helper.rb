@@ -18,5 +18,8 @@ RSpec.configure do |config|
 
   config.include(DatabaseHelpers)
   config.before(:suite) { DatabaseHelpers.populate_env_vars }
-  config.after(:suite) { PgEasyReplicate.drop_schema }
+  config.after(:suite) do
+    PgEasyReplicate.drop_schema
+  rescue StandardError # rubocop:disable Lint/SuppressedException
+  end
 end
