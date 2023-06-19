@@ -65,9 +65,9 @@ $ export TARGET_DB_URL="postgres://USERNAME:PASSWORD@localhost:5433/DATABASE_NAM
 Any `pg_easy_replicate` command can be run the same way with the docker image as well. As long the container is running in an environment where it has access to both the databases. Example
 
 ```bash
-docker run -it --rm shayonj/pg_easy_replicate:latest \
-  -e SOURCE_DB_URL="postgres://USERNAME:PASSWORD@localhost:5432/DATABASE_NAME" \
+docker run -e SOURCE_DB_URL="postgres://USERNAME:PASSWORD@localhost:5432/DATABASE_NAME"  \
   -e TARGET_DB_URL="postgres://USERNAME:PASSWORD@localhost:5433/DATABASE_NAME" \
+  -it --rm shayonj/pg_easy_replicate:latest \
   pg_easy_replicate config_check
 ```
 
