@@ -100,6 +100,12 @@ RSpec.describe(PgEasyReplicate) do
     end
 
     describe ".drop_schema" do
+      before { described_class.bootstrap({ group_name: "cluster1" }) }
+
+      after do
+        described_class.cleanup({ everything: true, group_name: "cluster1" })
+      end
+
       it "drops up the schema" do
         described_class.setup_schema
         described_class.drop_schema

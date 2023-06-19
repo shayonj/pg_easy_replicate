@@ -5,7 +5,11 @@ module PgEasyReplicate
     extend Helper
     class << self
       def setup
-        conn = Query.connect(source_db_url, internal_schema_name)
+        conn =
+          Query.connect(
+            connection_url: source_db_url,
+            schema: internal_schema_name,
+          )
         return if conn.table_exists?("groups")
         conn.create_table("groups") do
           primary_key(:id)
@@ -14,13 +18,22 @@ module PgEasyReplicate
           column(:schema_name, String)
           column(:created_at, Time, default: Sequel::CURRENT_TIMESTAMP)
           column(:updated_at, Time, default: Sequel::CURRENT_TIMESTAMP)
-          column(:started_at, Time, default: Sequel::CURRENT_TIMESTAMP)
-          column(:completed_at, Time)
+          column(:started_at, Time)
+          column(:failed_at, Time)
+          column(:switchover_completed_at, Time)
         end
+      ensure
+        conn&.disconnect
       end
 
       def drop
-        Query.connect(source_db_url, internal_schema_name).drop_table?("groups")
+        conn =
+          Query.connect(
+            connection_url: source_db_url,
+            schema: internal_schema_name,
+          ).drop_table?("groups")
+      ensure
+        conn&.disconnect
       end
 
       def create(options)
@@ -28,17 +41,26 @@ module PgEasyReplicate
           name: options[:name],
           table_names: options[:table_names],
           schema_name: options[:schema_name],
+          started_at: options[:started_at],
+          failed_at: options[:failed_at],
         )
       rescue => e
         abort_with("Adding group entry failed: #{e.message}")
       end
 
-      def update(group_name:, started_at: nil, completed_at: nil)
-        groups.where(name: group_name).update(
+      def update(
+        group_name:,
+        started_at: nil,
+        switchover_completed_at: nil,
+        failed_at: nil
+      )
+        set = {
           started_at: started_at&.utc,
-          completed_at: completed_at&.utc,
+          switchover_completed_at: switchover_completed_at&.utc,
+          failed_at: failed_at&.utc,
           updated_at: Time.now.utc,
-        )
+        }.compact
+        groups.where(name: group_name).update(set)
       rescue => e
         abort_with("Updating group entry failed: #{e.message}")
       end
@@ -58,7 +80,11 @@ module PgEasyReplicate
       private
 
       def groups
-        conn = Query.connect(source_db_url, internal_schema_name)
+        conn =
+          Query.connect(
+            connection_url: source_db_url,
+            schema: internal_schema_name,
+          )
         conn[:groups]
       end
     end

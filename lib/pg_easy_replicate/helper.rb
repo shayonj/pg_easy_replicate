@@ -22,8 +22,8 @@ module PgEasyReplicate
       "pger"
     end
 
-    def internal_user_name(group_name)
-      "pger_#{underscore(group_name)}"
+    def internal_user_name
+      "pger_su"
     end
 
     def publication_name(group_name)

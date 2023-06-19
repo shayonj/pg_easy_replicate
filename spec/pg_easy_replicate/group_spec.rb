@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
 RSpec.describe(PgEasyReplicate::Group) do
-  before do
-    PgEasyReplicate.setup_schema
-    described_class.drop
-  end
-
   describe ".setup" do
+    before do
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
+      PgEasyReplicate.setup_schema
+    end
+
+    after do
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+    end
+
     it "creates the table" do
       described_class.setup
 
@@ -29,6 +33,7 @@ RSpec.describe(PgEasyReplicate::Group) do
           query: columns_sql,
           connection_url: connection_url,
           schema: PgEasyReplicate.internal_schema_name,
+          user: "jamesbond",
         )
       expect(columns).to eq(
         [
@@ -49,7 +54,11 @@ RSpec.describe(PgEasyReplicate::Group) do
             data_type: "timestamp without time zone",
           },
           {
-            column_name: "completed_at",
+            column_name: "failed_at",
+            data_type: "timestamp without time zone",
+          },
+          {
+            column_name: "switchover_completed_at",
             data_type: "timestamp without time zone",
           },
         ],
@@ -58,6 +67,12 @@ RSpec.describe(PgEasyReplicate::Group) do
   end
 
   describe ".drop" do
+    before { PgEasyReplicate.bootstrap({ group_name: "cluster1" }) }
+
+    after do
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+    end
+
     it "drops the table" do
       described_class.setup
       described_class.drop
@@ -82,8 +97,15 @@ RSpec.describe(PgEasyReplicate::Group) do
   end
 
   describe ".create" do
-    before { described_class.setup }
-    after { described_class.drop }
+    before do
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
+      described_class.setup
+    end
+
+    after do
+      described_class.drop
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+    end
 
     it "adds a row with just the required fields" do
       described_class.create({ name: "test" })
@@ -122,31 +144,46 @@ RSpec.describe(PgEasyReplicate::Group) do
   end
 
   describe ".find" do
-    before { described_class.setup }
-    after { described_class.drop }
+    before do
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
+      described_class.setup
+    end
+
+    after do
+      described_class.drop
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+    end
 
     it "returns a row" do
       described_class.create(
         { name: "test", table_names: "table1, table2", schema_name: "foo" },
       )
       expect(described_class.find("test")).to include(
-        completed_at: nil,
+        switchover_completed_at: nil,
         created_at: kind_of(Time),
         name: "test",
         schema_name: "foo",
         id: kind_of(Integer),
-        started_at: kind_of(Time),
+        started_at: nil,
         updated_at: kind_of(Time),
+        failed_at: nil,
         table_names: "table1, table2",
       )
     end
   end
 
   describe ".update" do
-    before { described_class.setup }
-    after { described_class.drop }
+    before do
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
+      described_class.setup
+    end
 
-    it "updates the started_at and completed_at successfully" do
+    after do
+      described_class.drop
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+    end
+
+    it "updates the started_at and switchover_completed_at successfully" do
       described_class.create(
         { name: "test", table_names: "table1, table2", schema_name: "foo" },
       )
@@ -154,11 +191,11 @@ RSpec.describe(PgEasyReplicate::Group) do
       described_class.update(
         group_name: "test",
         started_at: Time.now,
-        completed_at: Time.now,
+        switchover_completed_at: Time.now,
       )
 
       expect(described_class.find("test")).to include(
-        completed_at: kind_of(Time),
+        switchover_completed_at: kind_of(Time),
         created_at: kind_of(Time),
         name: "test",
         schema_name: "foo",
@@ -171,8 +208,15 @@ RSpec.describe(PgEasyReplicate::Group) do
   end
 
   describe ".delete" do
-    before { described_class.setup }
-    after { described_class.drop }
+    before do
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
+      described_class.setup
+    end
+
+    after do
+      described_class.drop
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+    end
 
     it "returns a row" do
       described_class.create(
