@@ -1,6 +1,6 @@
 # pg_easy_replicate
 
-`pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up [logical replication](https://www.postgresql.org/docs/current/logical-replication.html) between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database) is fully replicating, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for upgrading between major version PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
+`pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up [logical replication](https://www.postgresql.org/docs/current/logical-replication.html) between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database) is fully replicating, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for performing minimal downtime major version upgrades between two PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
 
 - [Installation](#installation)
 - [Requirements](#requirements)
@@ -11,8 +11,8 @@
   - [Config check](#config-check)
   - [Bootstrap](#bootstrap)
   - [Start sync](#start-sync)
-- [Stats](#stats)
-- [Performing switchover](#performing-switchover)
+  - [Stats](#stats)
+  - [Performing switchover](#performing-switchover)
 - [Replicating single database with custom tables](#replicating-single-database-with-custom-tables)
 - [Switchover strategies with minimal downtime](#switchover-strategies-with-minimal-downtime)
   - [Rolling restart strategy](#rolling-restart-strategy)
@@ -73,7 +73,7 @@ docker run -it --rm shayonj/pg_easy_replicate:latest \
 
 ## CLI
 
-```
+```bash
 $  pg_easy_replicate
 pg_easy_replicate commands:
   pg_easy_replicate bootstrap -g, --group-name=GROUP_NAME    # Sets up temporary tables for information required during runtime
@@ -122,13 +122,13 @@ $ pg_easy_replicate start_sync --group-name database-cluster-1
 ...
 ```
 
-## Stats
+### Stats
 
 You can inspect or watch stats any time during the sync process. The stats give you can an idea of when the sync started, current flush/write lag, how many tables are in `replicating`, `copying` or other stages, and more.
 
 You can poll these stats to perform any other after the switchover is done. The stats include a `switchover_completed_at` which is updated once the switch over is complete.
 
-```
+```bash
 $ pg_easy_replicate stats --group-name database-cluster-1
 
 {
@@ -161,7 +161,7 @@ $ pg_easy_replicate stats --group-name database-cluster-1
   ....
 ```
 
-## Performing switchover
+### Performing switchover
 
 `pg_easy_replicate` doesn't kick off the switchover on its own. When you start the sync via `start_sync`, it starts the replication between the two databases. Once you have had the time to monitor stats and any other key metrics, you can kick off the `switchover`.
 
