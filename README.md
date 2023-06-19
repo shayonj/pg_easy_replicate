@@ -1,25 +1,22 @@
 # pg_easy_replicate
 
-**⚠️ NOTE: This project is currently WIP**
-
-`pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up logical replication between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database is fully replicating, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for upgrading between major version PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
+`pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up logical replication between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database) is fully replicating, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for upgrading between major version PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
 
 - [Installation](#installation)
 - [Requirements](#requirements)
 - [Limits](#limits)
 - [Usage](#usage)
-  - [Getting started](#getting-started)
+- [CLI](#cli)
+- [Replicating all tables with a single group](#replicating-all-tables-with-a-single-group)
   - [Config check](#config-check)
   - [Bootstrap](#bootstrap)
-  - [Start replication](#start-replication)
-  - [Stats](#stats)
-  - [Perform switchover](#perform-switchover)
-- [Replicating single database with multiple groups](#replicating-single-database-with-multiple-groups)
+  - [Start sync](#start-sync)
+- [Stats](#stats)
 - [Performing switchover](#performing-switchover)
+- [Replicating single database with custom tables](#replicating-single-database-with-custom-tables)
 - [Switchover strategies with minimal downtime](#switchover-strategies-with-minimal-downtime)
   - [Rolling restart strategy](#rolling-restart-strategy)
   - [DNS Failover strategy](#dns-failover-strategy)
-- [Bi-directional replication](#bi-directional-replication)
 
 ## Installation
 
@@ -74,37 +71,28 @@ docker run -it --rm shayonj/pg_easy_replicate:latest \
   pg_easy_replicate config_check
 ```
 
-### Getting started
+## CLI
 
-```bash
-# Ensure everything is in order
-$ pg_easy_replicate config_check
-✅ Config is looking good.
-
-# Bootstrap - this is required for every group
-$ pg_easy_replicate bootstrap --group-name database-cluster-1
-...
-
-# Start the sync
-$ pg_easy_replicate start_sync --group-name database-cluster-1 --schema-name public --tables "users, posts, events"
-
-# Watch the stats
-$ pg_easy_replicate stats --group-name database-cluster-1 --watch
-
-# Switchover when ready
-$ pg_easy_replicate switchover --group-name database-cluster-1
 ```
+$  pg_easy_replicate
+pg_easy_replicate commands:
+  pg_easy_replicate bootstrap -g, --group-name=GROUP_NAME    # Sets up temporary tables for information required during runtime
+  pg_easy_replicate cleanup -g, --group-name=GROUP_NAME      # Cleans up all bootstrapped data for the respective group
+  pg_easy_replicate config_check                             # Prints if source and target database have the required config
+  pg_easy_replicate help [COMMAND]                           # Describe available commands or one specific command
+  pg_easy_replicate start_sync -g, --group-name=GROUP_NAME   # Starts the logical replication from source database to target database provisioned in the group
+  pg_easy_replicate stats  -g, --group-name=GROUP_NAME       # Prints the statistics in JSON for the group
+  pg_easy_replicate stop_sync -g, --group-name=GROUP_NAME    # Stop the logical replication from source database to target database provisioned in the group
+  pg_easy_replicate switchover  -g, --group-name=GROUP_NAME  # Puts the source database in read only mode after all the data is flushed and written
+  pg_easy_replicate version                                  # Prints the version
+
+```
+
+## Replicating all tables with a single group
+
+You can create as many groups as you want for a single database. Groups are just a logical isolation of a single replication.
 
 ### Config check
-
-```bash
-$ pg_easy_replicate help config_check
-
-Usage:
-  pg_easy_replicate config_check
-
-Prints if source and target database have the required config
-```
 
 ```bash
 $ pg_easy_replicate config_check
@@ -114,64 +102,81 @@ $ pg_easy_replicate config_check
 
 ### Bootstrap
 
-```bash
-$ pg_easy_replicate help bootstrap
-
-Usage:
-  pg_easy_replicate bootstrap -g, --group-name=GROUP_NAME
-
-Options:
-  -g, --group-name=GROUP_NAME  # Name of the group to provision
-
-Sets up temporary tables for information required during runtime
-```
-
-### Start replication
+Every sync will need to be bootstrapped before you can set up the sync between two databases. Bootstrap creates a new super user to perform the orchestration required during the rest of the process. It also creates some internal metadata tables for record keeping.
 
 ```bash
-$ pg_easy_replicate help start_sync
+$ pg_easy_replicate bootstrap --group-name database-cluster-1
 
-Usage:
-  pg_easy_replicate start_sync -g, --group-name=GROUP_NAME
-
-Options:
-  -g, --group-name=GROUP_NAME      # Name of the grouping for this collection of source and target DB
-  -s, [--schema-name=SCHEMA_NAME]  # Name of the schema tables are in, only required if passsing list of tables
-  -t, [--tables=TABLES]            # Comma separated list of table names. Default: All tables
-
-Starts the logical replication from source database to target database provisioned in the group
+{"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":21485,"level":30,"time":"2023-06-19T15:51:11.015-04:00","v":0,"msg":"Setting up schema","version":"0.1.0"}
+...
 ```
 
-### Stats
+### Start sync
+
+Once the bootstrap is complete, you can start the sync. Starting the sync sets up the publication, subscription and performs other minor housekeeping things.
 
 ```bash
-$ pg_easy_replicate help stats
-Usage:
-  pg_easy_replicate stats  -g, --group-name=GROUP_NAME
+$ pg_easy_replicate start_sync --group-name database-cluster-1
 
-Options:
-  -g, --group-name=GROUP_NAME  # Name of the group previously provisioned
-  -w, [--watch=WATCH]          # Tail the stats
-
-Prints the statistics in JSON for the group
+{"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":22113,"level":30,"time":"2023-06-19T15:54:54.874-04:00","v":0,"msg":"Setting up publication","publication_name":"pger_publication_database_cluster_1","version":"0.1.0"}
+...
 ```
 
-### Perform switchover
+## Stats
+
+You can inspect or watch stats any time during the sync process. The stats give you can an idea of when the sync started, current flush/write lag, how many tables are in `replicating`, `copying` or other stages, and more.
+
+You can poll these stats to perform any other after the switchover is done. The stats include a `switchover_completed_at` which is updated once the switch over is complete.
+
+```
+$ pg_easy_replicate stats --group-name database-cluster-1
+
+{
+  "lag_stats": [
+    {
+      "pid": 66,
+      "client_addr": "192.168.128.2",
+      "user_name": "jamesbond",
+      "application_name": "pger_subscription_database_cluster_1",
+      "state": "streaming",
+      "sync_state": "async",
+      "write_lag": "0.0",
+      "flush_lag": "0.0",
+      "replay_lag": "0.0"
+    }
+  ],
+  "message_lsn_receipts": [
+    {
+      "received_lsn": "0/1674688",
+      "last_msg_send_time": "2023-06-19 19:56:35 UTC",
+      "last_msg_receipt_time": "2023-06-19 19:56:35 UTC",
+      "latest_end_lsn": "0/1674688",
+      "latest_end_time": "2023-06-19 19:56:35 UTC"
+    }
+  ],
+  "sync_started_at": "2023-06-19 19:54:54 UTC",
+  "sync_failed_at": null,
+  "switchover_completed_at": null
+
+  ....
+```
+
+## Performing switchover
+
+`pg_easy_replicate` doesn't kick off the switchover on its own. When you start the sync via `start_sync`, it starts the replication between the two databases. Once you have had the time to monitor stats and any other key metrics, you can kick off the `switchover`.
+
+`switchover` will wait until all tables in the group are replicating and the delta for lag is <200kb (by calculating the `pg_wal_lsn_diff` between `sent_lsn` and `write_lsn`) and then perform the switch.
+
+The switch is made by putting the user on the source database in `READ ONLY` mode, so that it is not accepting any more writes and waits for the flush lag to be `0`. It is up to user to kick of a rolling restart of your application containers or failover DNS (more on these below in strategies) after the switchover is complete, so that your application isn't sending any read/write requests to the old/source database.
 
 ```bash
-$ pg_easy_replicate help switchover
+$ pg_easy_replicate switchover  --group-name database-cluster-1
 
-Usage:
-  pg_easy_replicate switchover  -g, --group-name=GROUP_NAME
-
-Options:
-  -g, --group-name=GROUP_NAME            # Name of the group previously provisioned
-  -l, [--lag-delta-size=LAG_DELTA_SIZE]  # The size of the lag to watch for before switchover. Default 200KB.
-
-Puts the source database in read only mode after all the data is flushed and written
+{"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":24192,"level":30,"time":"2023-06-19T16:05:23.033-04:00","v":0,"msg":"Watching lag stats","version":"0.1.0"}
+...
 ```
 
-## Replicating single database with multiple groups
+## Replicating single database with custom tables
 
 By default all tables are added for replication but you can create multiple groups with custom tables for the same database. Example
 
@@ -191,28 +196,18 @@ $ pg_easy_replicate switchover  --group-name database-cluster-2
 ...
 ```
 
-## Performing switchover
-
-`pg_easy_replicate` doesn't kick off the switchover on its own. When you start the sync via `start_sync`, it starts the replicating between the two databases. Once you have had the time to monitor stats and any other key metrics, you can kick off the `switchover`.
-
-`switchover` will wait until all tables in the group are replicating and the delta for lag is <200kb (between the LSN for write and flush lag) and then perform the switch.
-
-The switch is made by putting the user on the source database in `READ ONLY` mode, so that it is not accepting any more writes and waits for the flush lag to be 0. It is up to you to kick of a rolling restart of your application containers or failover DNS (more on this below in strategies) after the switchover is complete, so that your application isn't sending any read/write requests to the old/source database.
-
 ## Switchover strategies with minimal downtime
 
-For minimal downtime, it'd be best to watch/tail the stats and wait until `switchover_complete` is reporting as `true`. Once that happens you can perform any of the following strategies. Note: These are just suggestions and `pg_easy_replicate` doesn't provide any functionalities for this.
+For minimal downtime, it'd be best to watch/tail the stats and wait until `switchover_completed_at` is updated with a timestamp. Once that happens you can perform any of the following strategies. Note: These are just suggestions and `pg_easy_replicate` doesn't provide any functionalities for this.
 
 ### Rolling restart strategy
 
 In this strategy, you have a change ready to go which instructs your application to start connecting to the new database. Either using an environment variable or similar. Depending on the application type, it may or may not require a rolling restart.
 
-Next, you can set up a program that watches the `stats` and waits until `switchover_complete` is reporting as `true`. Once that happens it kicks of a rolling restart of your application containers so they can start making connections to the DNS of the new database.
+Next, you can set up a program that watches the `stats` and waits until `switchover_completed_at` is reporting as `true`. Once that happens it kicks off a rolling restart of your application containers so they can start making connections to the DNS of the new database.
 
 ### DNS Failover strategy
 
-TBD
+In this strategy, you have a weighted based DNS system (example [AWS Route53 weighted records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-weighted.html)) where 100% of traffic goes to a primary origin and 0% to a secondary origin. The primary origin here is the DNS host for your source database and secondary origin is the DNS host for your target database. You can set up your application ahead of time to interact with the database using DNS from the weighted group.
 
-## Bi-directional replication
-
-TBD
+Next, you can set up a program that watches the `stats` and waits until `switchover_completed_at` is reporting as `true`. Once that happens it updates the weight in the DNS weighted group where 100% of the requests now go to the new/target database. Note: Keeping a lot `ttl` is recommended.

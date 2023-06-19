@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["shayonj@gmail.com"]
 
   spec.description =
-    "Easy CLI tool for making non-blocking zero downtime schema changes in PostgreSQL"
+    "Easily setup logical replication and switchover to new database with minimal downtime"
   spec.summary = spec.description
   spec.homepage = "https://github.com/shayonj/pg_easy_replicate"
   spec.license = "MIT"

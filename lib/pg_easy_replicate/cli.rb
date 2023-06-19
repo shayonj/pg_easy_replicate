@@ -61,7 +61,6 @@ module PgEasyReplicate
                   desc:
                     "Comma separated list of table names. Default: All tables"
     def start_sync
-      PgEasyReplicate.bootstrap(options)
       PgEasyReplicate::Orchestrate.start_sync(options)
     end
 
@@ -85,12 +84,15 @@ module PgEasyReplicate
                   aliases: "-l",
                   desc:
                     "The size of the lag to watch for before switchover. Default 200KB."
-    method_option :bi_directional,
-                  aliases: "-b",
-                  desc:
-                    "Setup replication from target database to source database"
+    # method_option :bi_directional,
+    #               aliases: "-b",
+    #               desc:
+    #                 "Setup replication from target database to source database"
     def switchover
-      PgEasyReplicate::Orchestrate.start_sync(options[:group_name])
+      PgEasyReplicate::Orchestrate.switchover(
+        group_name: options[:group_name],
+        lag_delta_size: options[:lag_delta_size],
+      )
     end
 
     desc "stats ", "Prints the statistics in JSON for the group"

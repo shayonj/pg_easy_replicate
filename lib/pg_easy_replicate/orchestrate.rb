@@ -179,11 +179,16 @@ module PgEasyReplicate
         )
       end
 
-      def switchover(group_name:, source_conn_string:, target_conn_string:)
+      def switchover(
+        group_name:,
+        source_conn_string: source_db_url,
+        target_conn_string: target_db_url,
+        lag_delta_size: DEFAULT_LAG
+      )
         PgEasyReplicate.assert_config
         group = Group.find(group_name)
 
-        watch_lag(group_name: group_name)
+        watch_lag(group_name: group_name, lag: lag_delta_size)
         revoke_connections_on_source_db(group_name)
         wait_for_remaining_catchup(group_name)
         refresh_sequences(
@@ -207,9 +212,14 @@ module PgEasyReplicate
         loop do
           sleep(wait_time)
 
-          break if Stats.all_tables_replicating?(group_name)
+          unless Stats.all_tables_replicating?(group_name)
+            logger.debug(
+              "All tables haven't reached replicating state, skipping check",
+            )
+            next
+          end
 
-          lag_stat = lag_stats.first
+          lag_stat = Stats.lag_stats(group_name).first
           if lag_stat[:write_lag].nil? || lag_stat[:flush_lag].nil? ||
                lag_stat[:replay_lag].nil?
             next
