@@ -136,7 +136,7 @@ Style/StringLiteralsInInterpolation:
   Enabled: false
 
 Style/SymbolArray:
-  EnforcedStyle: brackets
+  Enabled: false
 
 Style/TrailingCommaInArguments:
   Enabled: false

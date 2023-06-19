@@ -178,7 +178,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     end
   end
 
-  describe ".start_sync" do
+  describe ".start_sync" do # TODO add schema
     after do
       described_class.stop_sync(
         group_name: "cluster1",

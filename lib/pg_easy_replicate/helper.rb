@@ -48,15 +48,12 @@ module PgEasyReplicate
     end
 
     def connection_info(conn_string)
-      conn_info = PG::Connection.conninfo_parse(conn_string)
-      {
-        user: conn_info.find { |k| k[:keyword] == "user" }[:val],
-        dbname: conn_info.find { |k| k[:keyword] == "dbname" }[:val],
-        host: conn_info.find { |k| k[:keyword] == "host" }[:val],
-        port: conn_info.find { |k| k[:keyword] == "port" }[:val],
-        options: conn_info.find { |k| k[:keyword] == "options" }[:val],
-        password: conn_info.find { |k| k[:keyword] == "password" }[:val],
-      }
+      PG::Connection
+        .conninfo_parse(conn_string)
+        .each_with_object({}) do |obj, hash|
+          hash[obj[:keyword].to_sym] = obj[:val]
+        end
+        .compact
     end
 
     def db_user(url)

@@ -52,5 +52,22 @@ RSpec.describe(PgEasyReplicate::Query) do
         ).to_a,
       ).to eq([])
     end
+
+    it "runs the query successfully with custom user" do
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
+
+      result =
+        described_class.run(
+          query: "SELECT session_user, current_user;",
+          user: "pger_cluster1",
+          connection_url: connection_url,
+        )
+
+      expect(result).to eq(
+        [{ current_user: "pger_cluster1", session_user: "pger_cluster1" }],
+      )
+
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+    end
   end
 end

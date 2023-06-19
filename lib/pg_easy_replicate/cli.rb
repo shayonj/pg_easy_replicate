@@ -61,8 +61,8 @@ module PgEasyReplicate
                   desc:
                     "Comma separated list of table names. Default: All tables"
     def start_sync
-      PgEasyReplicate.bootstrap
-      PgEasyReplicate::Orchestrate.start_sync(options[:group_name])
+      PgEasyReplicate.bootstrap(options)
+      PgEasyReplicate::Orchestrate.start_sync(options)
     end
 
     desc "stop_sync",

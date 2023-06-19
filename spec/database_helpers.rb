@@ -36,6 +36,11 @@ module DatabaseHelpers
   end
 
   def setup_tables
+    setup(connection_url)
+    setup(target_connection_url)
+  end
+
+  def setup(connection_url)
     PgEasyReplicate::Query.run(
       query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
       connection_url: connection_url,
@@ -65,6 +70,11 @@ module DatabaseHelpers
     PgEasyReplicate::Query.run(
       query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
       connection_url: connection_url,
+    )
+
+    PgEasyReplicate::Query.run(
+      query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
+      connection_url: target_connection_url,
     )
   end
 

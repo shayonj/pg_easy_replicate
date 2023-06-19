@@ -10,6 +10,7 @@ require "pg_easy_replicate/helper"
 require "pg_easy_replicate/version"
 require "pg_easy_replicate/query"
 require "pg_easy_replicate/orchestrate"
+require "pg_easy_replicate/stats"
 require "pg_easy_replicate/group"
 require "pg_easy_replicate/cli"
 
