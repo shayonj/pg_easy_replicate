@@ -189,7 +189,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
     it "succesfully" do
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
-      described_class.start_sync({ group_name: "cluster1" })
+      described_class.start_sync(
+        { group_name: "cluster1", schema: test_schema },
+      )
 
       expect(pg_publications(connection_url: connection_url)).to eq(
         [{ pubname: "pger_publication_cluster1" }],
