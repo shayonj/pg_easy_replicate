@@ -55,7 +55,7 @@ module PgEasyReplicate
     method_option :schema_name,
                   aliases: "-s",
                   desc:
-                    "Name of the schema tables are in, only required if passsing list of tables"
+                    "Name of the schema tables are in, only required if passing list of tables"
     method_option :tables,
                   aliases: "-t",
                   desc:
