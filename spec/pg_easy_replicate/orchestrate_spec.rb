@@ -305,7 +305,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         PgEasyReplicate::Query.connect(
           connection_url: connection_url,
           schema: test_schema,
-          user: "pger_su",
+          user: "pger_su_h1a4fb",
         )
       conn1[:items].insert(name: "Foo1")
       expect(conn1[:items].first[:name]).to eq("Foo1")
@@ -315,7 +315,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         PgEasyReplicate::Query.connect(
           connection_url: target_connection_url,
           schema: test_schema,
-          user: "pger_su",
+          user: "pger_su_h1a4fb",
         )
       expect(conn2[:items].first).to be_nil
 

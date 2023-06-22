@@ -67,7 +67,7 @@ RSpec.describe(PgEasyReplicate::Query) do
         )
 
       expect(result).to eq(
-        [{ current_user: "pger_su", session_user: "pger_su" }],
+        [{ current_user: "pger_su_h1a4fb", session_user: "pger_su_h1a4fb" }],
       )
 
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })

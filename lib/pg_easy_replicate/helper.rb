@@ -23,7 +23,7 @@ module PgEasyReplicate
     end
 
     def internal_user_name
-      "pger_su"
+      "pger_su_h1a4fb"
     end
 
     def publication_name(group_name)

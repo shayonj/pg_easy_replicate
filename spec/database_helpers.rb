@@ -110,7 +110,7 @@ module DatabaseHelpers
   def user_permissions(connection_url:, group_name:)
     PgEasyReplicate::Query.run(
       query:
-        "select rolcreatedb, rolcreaterole, rolcanlogin, rolsuper from pg_authid where rolname = 'pger_su';",
+        "select rolcreatedb, rolcreaterole, rolcanlogin, rolsuper from pg_authid where rolname = 'pger_su_h1a4fb';",
       connection_url: connection_url,
       user: "jamesbond",
     )
