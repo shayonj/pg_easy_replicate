@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    pg_easy_replicate (0.1.1)
+    pg_easy_replicate (0.1.2)
       lockbox (~> 1.2.0)
       ougai (~> 2.0.0)
       pg (~> 1.5.3)
