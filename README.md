@@ -216,3 +216,11 @@ Next, you can set up a program that watches the `stats` and waits until `switcho
 In this strategy, you have a weighted based DNS system (example [AWS Route53 weighted records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-weighted.html)) where 100% of traffic goes to a primary origin and 0% to a secondary origin. The primary origin here is the DNS host for your source database and secondary origin is the DNS host for your target database. You can set up your application ahead of time to interact with the database using DNS from the weighted group.
 
 Next, you can set up a program that watches the `stats` and waits until `switchover_completed_at` is reporting as `true`. Once that happens it updates the weight in the DNS weighted group where 100% of the requests now go to the new/target database. Note: Keeping a low `ttl` is recommended.
+
+## Contributing
+
+PRs most welcome. You can get started locally by
+
+- `docker compose down -v && docker compose up --remove-orphans --build`
+- Install ruby `3.1.3` using RVM ([instruction](https://rvm.io/rvm/install#any-other-system))
+- `bundle exec rspec` for specs

@@ -1,32 +1,34 @@
 version: "3.7"
 services:
   source_db:
-    image: postgres:12-alpine
+    image: postgres:12
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: jamesbond
       POSTGRES_PASSWORD: jamesbond
       POSTGRES_DB: postgres
-    command:
-      - "postgres"
-      - "-c"
-      - "wal_level=logical"
+    command: >
+      -c wal_level=logical
+      -c ssl=on
+      -c ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+      -c ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
     networks:
       localnet:
 
   target_db:
-    image: postgres:12-alpine
+    image: postgres:12
     ports:
       - "5433:5432"
     environment:
       POSTGRES_USER: jamesbond
       POSTGRES_PASSWORD: jamesbond
       POSTGRES_DB: postgres
-    command:
-      - "postgres"
-      - "-c"
-      - "wal_level=logical"
+    command: >
+      -c wal_level=logical
+      -c ssl=on
+      -c ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+      -c ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
     networks:
       localnet:
 
