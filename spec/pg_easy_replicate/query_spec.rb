@@ -5,7 +5,7 @@ RSpec.describe(PgEasyReplicate::Query) do
     before { setup_tables }
 
     let(:connection_url) do
-      "postgres://jamesbond:jamesbond@localhost:5432/postgres"
+      "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5432/postgres"
     end
 
     it "runs the query successfully" do

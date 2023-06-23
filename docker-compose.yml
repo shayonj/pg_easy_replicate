@@ -6,7 +6,7 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_USER: jamesbond
-      POSTGRES_PASSWORD: jamesbond
+      POSTGRES_PASSWORD: jamesbond123@7!'3aaR
       POSTGRES_DB: postgres
     command: >
       -c wal_level=logical
@@ -22,7 +22,7 @@ services:
       - "5433:5432"
     environment:
       POSTGRES_USER: jamesbond
-      POSTGRES_PASSWORD: jamesbond
+      POSTGRES_PASSWORD: jamesbond123@7!'3aaR
       POSTGRES_DB: postgres
     command: >
       -c wal_level=logical

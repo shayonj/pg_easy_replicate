@@ -5,21 +5,23 @@ module DatabaseHelpers
     ENV["POSTGRES_SCHEMA"] || "pger_test"
   end
 
+  # We are use url encoded password below.
+  # Original password is jamesbond123@7!'3aaR
   def connection_url
-    "postgres://jamesbond:jamesbond@localhost:5432/postgres"
+    "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5432/postgres"
   end
 
   def target_connection_url
-    "postgres://jamesbond:jamesbond@localhost:5433/postgres"
+    "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5433/postgres"
   end
 
   def docker_compose_target_connection_url
-    "postgres://jamesbond:jamesbond@target_db/postgres"
+    "postgres://jamesbond:jamesbond123%407%21%273aaR@target_db/postgres"
   end
 
   def docker_compose_source_connection_url
     return connection_url if ENV["GITHUB_WORKFLOW"] # if running in CI/github actions
-    "postgres://jamesbond:jamesbond@source_db/postgres"
+    "postgres://jamesbond:jamesbond123%407%21%273aaR@source_db/postgres"
   end
 
   def new_dummy_table_sql
@@ -144,9 +146,9 @@ module DatabaseHelpers
   def self.populate_env_vars
     ENV[
       "SOURCE_DB_URL"
-    ] = "postgres://jamesbond:jamesbond@localhost:5432/postgres"
+    ] = "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5432/postgres"
     ENV[
       "TARGET_DB_URL"
-    ] = "postgres://jamesbond:jamesbond@localhost:5433/postgres"
+    ] = "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5433/postgres"
   end
 end

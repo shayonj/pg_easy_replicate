@@ -171,7 +171,7 @@ module PgEasyReplicate
     end
 
     def create_user(conn_string:, group_name:)
-      password = connection_info(conn_string)[:user]
+      password = connection_info(conn_string)[:password].gsub("'") { "''" }
       sql = <<~SQL
         drop role if exists #{internal_user_name};
         create role #{internal_user_name} with password '#{password}' login superuser createdb createrole;
