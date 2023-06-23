@@ -38,7 +38,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.metadata = { "rubygems_mfa_required" => "true" }
 
-  spec.add_runtime_dependency("lockbox", "~> 1.2.0")
   spec.add_runtime_dependency("ougai", "~> 2.0.0")
   spec.add_runtime_dependency("pg", "~> 1.5.3")
   spec.add_runtime_dependency("sequel", "~> 5.69.0")
