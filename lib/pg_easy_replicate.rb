@@ -2,7 +2,6 @@
 
 require "json"
 require "ougai"
-require "lockbox"
 require "pg"
 require "sequel"
 
