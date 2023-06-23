@@ -9,8 +9,6 @@ module PgEasyReplicate
       DEFAULT_WAIT = 5 # seconds
 
       def start_sync(options)
-        PgEasyReplicate.assert_config
-
         create_publication(
           group_name: options[:group_name],
           conn_string: source_db_url,
@@ -62,10 +60,14 @@ module PgEasyReplicate
           "Setting up publication",
           { publication_name: publication_name(group_name) },
         )
+
         Query.run(
           query: "create publication #{publication_name(group_name)}",
           connection_url: conn_string,
+          user: db_user(conn_string),
         )
+      rescue => e
+        raise "Unable to create publication: #{e.message}"
       end
 
       def add_tables_to_publication(
@@ -91,6 +93,8 @@ module PgEasyReplicate
             schema: schema,
           )
         end
+      rescue => e
+        raise "Unable to add tables to publication: #{e.message}"
       end
 
       def list_all_tables(schema:, conn_string:)
@@ -112,7 +116,10 @@ module PgEasyReplicate
         Query.run(
           query: "DROP PUBLICATION IF EXISTS #{publication_name(group_name)}",
           connection_url: conn_string,
+          user: db_user(conn_string),
         )
+      rescue => e
+        raise "Unable to drop publication: #{e.message}"
       end
 
       def create_subscription(
@@ -132,6 +139,7 @@ module PgEasyReplicate
           query:
             "CREATE SUBSCRIPTION #{subscription_name(group_name)} CONNECTION '#{source_conn_string}' PUBLICATION #{publication_name(group_name)}",
           connection_url: target_conn_string,
+          user: db_user(target_conn_string),
           transaction: false,
         )
       rescue Sequel::DatabaseError => e
@@ -141,7 +149,7 @@ module PgEasyReplicate
           )
         end
 
-        raise
+        raise "Unable to create subscription: #{e.message}"
       end
 
       def drop_subscription(group_name:, target_conn_string:)
@@ -157,11 +165,11 @@ module PgEasyReplicate
           connection_url: target_conn_string,
           transaction: false,
         )
+      rescue => e
+        raise "Unable to drop subscription: #{e.message}"
       end
 
       def stop_sync(target_conn_string:, source_conn_string:, group_name:)
-        PgEasyReplicate.assert_config
-
         logger.info(
           "Stopping sync",
           {
@@ -177,6 +185,8 @@ module PgEasyReplicate
           group_name: group_name,
           target_conn_string: target_conn_string,
         )
+      rescue => e
+        raise "Unable to stop sync user: #{e.message}"
       end
 
       def switchover(
@@ -185,7 +195,6 @@ module PgEasyReplicate
         target_conn_string: target_db_url,
         lag_delta_size: DEFAULT_LAG
       )
-        PgEasyReplicate.assert_config
         group = Group.find(group_name)
 
         watch_lag(group_name: group_name, lag: lag_delta_size)
@@ -258,6 +267,8 @@ module PgEasyReplicate
           "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE usename = '#{db_user(source_db_url)}';"
 
         Query.run(query: kill_sql, connection_url: source_db_url)
+      rescue => e
+        raise "Unable to revoke connections on source db: #{e.message}"
       end
 
       def restore_connections_on_source_db(group_name)
@@ -298,6 +309,8 @@ module PgEasyReplicate
         SQL
 
         Query.run(query: sql, connection_url: conn_string, schema: schema)
+      rescue => e
+        raise "Unable to refresh sequences: #{e.message}"
       end
 
       def mark_switchover_complete(group_name)

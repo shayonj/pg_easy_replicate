@@ -10,8 +10,8 @@ RSpec.describe(PgEasyReplicate) do
       result = described_class.config
       expect(result).to eq(
         {
-          source_db_is_superuser: true,
-          target_db_is_superuser: true,
+          source_db_is_super_user: true,
+          target_db_is_super_user: true,
           source_db: [
             { name: "max_logical_replication_workers", setting: "4" },
             { name: "max_replication_slots", setting: "10" },
@@ -66,28 +66,64 @@ RSpec.describe(PgEasyReplicate) do
       it "raises when user is not superuser on source db" do
         allow(described_class).to receive(:config).and_return(
           {
-            source_db_is_superuser: false,
+            source_db_is_super_user: false,
             target_db: [{ name: "wal_level", setting: "logical" }],
             source_db: [{ name: "wal_level", setting: "logical" }],
           },
         )
         expect { described_class.assert_config }.to raise_error(
-          "User on source database should be a superuser",
+          "User on source database does not have super user privilege",
         )
       end
 
       it "raises when user is not superuser on target db" do
         allow(described_class).to receive(:config).and_return(
           {
-            source_db_is_superuser: true,
-            target_db_is_superuser: false,
+            source_db_is_super_user: true,
+            target_db_is_super_user: false,
             target_db: [{ name: "wal_level", setting: "logical" }],
             source_db: [{ name: "wal_level", setting: "logical" }],
           },
         )
         expect { described_class.assert_config }.to raise_error(
-          "User on target database should be a superuser",
+          "User on target database does not have super user privilege",
         )
+      end
+    end
+
+    describe ".is_super_user?" do
+      before { setup_roles }
+      after { cleanup_roles }
+
+      it "returns true" do
+        expect(described_class.send(:is_super_user?, connection_url)).to be(
+          true,
+        )
+      end
+
+      it "returns true with non primary user" do
+        expect(
+          described_class.send(
+            :is_super_user?,
+            connection_url("jamesbond_sup"),
+          ),
+        ).to be(true)
+      end
+
+      it "returns false" do
+        expect(
+          described_class.send(:is_super_user?, connection_url("no_sup")),
+        ).to be(false)
+      end
+
+      it "returns true if user is part of the special user role" do
+        expect(
+          described_class.send(
+            :is_super_user?,
+            connection_url("jamesbond_role_regular"),
+            "jamesbond_super_role",
+          ),
+        ).to be(true)
       end
     end
 
@@ -167,6 +203,7 @@ RSpec.describe(PgEasyReplicate) do
     describe ".cleanup" do
       it "successfully with everything" do
         described_class.bootstrap({ group_name: "cluster1" })
+        ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
         PgEasyReplicate::Orchestrate.start_sync({ group_name: "cluster1" })
         described_class.cleanup({ everything: true, group_name: "cluster1" })
 

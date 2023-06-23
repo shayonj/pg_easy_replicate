@@ -13,7 +13,6 @@ module PgEasyReplicate
 
     class << self
       def object(group_name)
-        PgEasyReplicate.assert_config
         stats = replication_stats(group_name)
         group = Group.find(group_name)
         {

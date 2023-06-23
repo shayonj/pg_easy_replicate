@@ -21,17 +21,20 @@ module PgEasyReplicate
   extend Helper
 
   class << self
-    def config
+    def config(special_user_role: nil)
       abort_with("SOURCE_DB_URL is missing") if source_db_url.nil?
       abort_with("TARGET_DB_URL is missing") if target_db_url.nil?
+
       @config ||=
         begin
           q =
             "select name, setting from pg_settings where name in  ('max_wal_senders', 'max_worker_processes', 'wal_level',  'max_replication_slots', 'max_logical_replication_workers');"
 
           {
-            source_db_is_superuser: is_super_user?(source_db_url),
-            target_db_is_superuser: is_super_user?(target_db_url),
+            source_db_is_super_user:
+              is_super_user?(source_db_url, special_user_role),
+            target_db_is_super_user:
+              is_super_user?(target_db_url, special_user_role),
             source_db:
               Query.run(
                 query: q,
@@ -50,33 +53,43 @@ module PgEasyReplicate
         end
     end
 
-    def assert_config
-      unless assert_wal_level_logical(config.dig(:source_db))
+    def assert_config(special_user_role: nil)
+      config_hash = config(special_user_role: special_user_role)
+
+      unless assert_wal_level_logical(config_hash.dig(:source_db))
         abort_with("WAL_LEVEL should be LOGICAL on source DB")
       end
 
-      unless assert_wal_level_logical(config.dig(:target_db))
+      unless assert_wal_level_logical(config_hash.dig(:target_db))
         abort_with("WAL_LEVEL should be LOGICAL on target DB")
       end
 
-      unless config.dig(:source_db_is_superuser)
-        abort_with("User on source database should be a superuser")
+      unless config_hash.dig(:source_db_is_super_user)
+        abort_with("User on source database does not have super user privilege")
       end
 
-      return if config.dig(:target_db_is_superuser)
-      abort_with("User on target database should be a superuser")
+      return if config_hash.dig(:target_db_is_super_user)
+      abort_with("User on target database does not have super user privilege")
     end
 
     def bootstrap(options)
-      assert_config
       logger.info("Setting up schema")
       setup_schema
 
       logger.info("Setting up replication user on source database")
-      create_user(conn_string: source_db_url, group_name: options[:group_name])
+      create_user(
+        conn_string: source_db_url,
+        group_name: options[:group_name],
+        special_user_role: options[:special_user_role],
+        grant_permissions_on_schema: true,
+      )
 
       logger.info("Setting up replication user on target database")
-      create_user(conn_string: target_db_url, group_name: options[:group_name])
+      create_user(
+        conn_string: target_db_url,
+        group_name: options[:group_name],
+        special_user_role: options[:special_user_role],
+      )
 
       logger.info("Setting up groups tables")
       Group.setup
@@ -122,7 +135,10 @@ module PgEasyReplicate
         query: "DROP SCHEMA IF EXISTS #{internal_schema_name} CASCADE",
         connection_url: source_db_url,
         schema: internal_schema_name,
+        user: db_user(target_db_url),
       )
+    rescue => e
+      raise "Unable to drop schema: #{e.message}"
     end
 
     def setup_schema
@@ -138,6 +154,8 @@ module PgEasyReplicate
         schema: internal_schema_name,
         user: db_user(target_db_url),
       )
+    rescue => e
+      raise "Unable to setup schema: #{e.message}"
     end
 
     def logger
@@ -159,38 +177,109 @@ module PgEasyReplicate
       end
     end
 
-    def is_super_user?(url)
-      Query.run(
-        query:
-          "select usesuper from pg_user where usename = '#{db_user(url)}';",
-        connection_url: url,
-        user: db_user(target_db_url),
-      ).first[
-        :usesuper
-      ]
+    def is_super_user?(url, special_user_role = nil)
+      if special_user_role
+        sql = <<~SQL
+          SELECT r.rolname AS username,
+            r1.rolname AS "role"
+          FROM pg_catalog.pg_roles r
+          LEFT JOIN pg_catalog.pg_auth_members m ON (m.member = r.oid)
+          LEFT JOIN pg_roles r1 ON (m.roleid=r1.oid)
+          WHERE r.rolname = '#{db_user(url)}'
+          ORDER BY 1;
+        SQL
+
+        r =
+          Query.run(
+            query: sql,
+            connection_url: url,
+            user: db_user(target_db_url),
+          )
+        # If special_user_role is passed just ensure the url in conn_string has been granted
+        # the special_user_role
+        r.any? { |q| q[:role] == special_user_role }
+      else
+        r =
+          Query.run(
+            query:
+              "SELECT rolname, rolsuper FROM pg_roles where rolname = '#{db_user(url)}';",
+            connection_url: url,
+            user: db_user(target_db_url),
+          )
+        r.any? { |q| q[:rolsuper] }
+      end
+    rescue => e
+      raise "Unable to check superuser conditions: #{e.message}"
     end
 
-    def create_user(conn_string:, group_name:)
+    def create_user(
+      conn_string:,
+      group_name:,
+      special_user_role: nil,
+      grant_permissions_on_schema: false
+    )
       password = connection_info(conn_string)[:password].gsub("'") { "''" }
+
       sql = <<~SQL
         drop role if exists #{internal_user_name};
-        create role #{internal_user_name} with password '#{password}' login superuser createdb createrole;
+        create role #{internal_user_name} with password '#{password}' login createdb createrole;
+        grant all privileges on database #{db_name(conn_string)} TO #{internal_user_name};
       SQL
 
       Query.run(
         query: sql,
         connection_url: conn_string,
-        user: db_user(target_db_url),
+        user: db_user(conn_string),
+        transaction: false,
       )
+
+      sql =
+        if special_user_role
+          "grant #{special_user_role} to #{internal_user_name};"
+        else
+          "alter user #{internal_user_name} with superuser;"
+        end
+
+      Query.run(
+        query: sql,
+        connection_url: conn_string,
+        user: db_user(conn_string),
+        transaction: false,
+      )
+
+      return unless grant_permissions_on_schema
+      Query.run(
+        query:
+          "grant all on schema #{internal_schema_name} to #{internal_user_name}",
+        connection_url: conn_string,
+        user: db_user(conn_string),
+        transaction: false,
+      )
+    rescue => e
+      raise "Unable to create user: #{e.message}"
     end
 
     def drop_user(conn_string:, group_name:)
-      sql = "drop role if exists #{internal_user_name};"
+      sql = <<~SQL
+       revoke all privileges on database #{db_name(conn_string)} from #{internal_user_name};
+      SQL
       Query.run(
         query: sql,
         connection_url: conn_string,
         user: db_user(conn_string),
       )
+
+      sql = <<~SQL
+        drop role if exists #{internal_user_name};
+      SQL
+
+      Query.run(
+        query: sql,
+        connection_url: conn_string,
+        user: db_user(conn_string),
+      )
+    rescue => e
+      raise "Unable to drop user: #{e.message}"
     end
   end
 end
