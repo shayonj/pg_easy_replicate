@@ -1,5 +1,5 @@
-FROM ruby:3.0
+FROM ruby:3.1.4
 
-ARG VERSION=0.1.2
+ARG VERSION
 
 RUN gem install pg_easy_replicate -v $VERSION
