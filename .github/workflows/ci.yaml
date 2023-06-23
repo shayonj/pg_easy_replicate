@@ -101,5 +101,5 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args: VERSION=${{  github.event.release.tag_name  }}
-          tags: shayonj/pg_easy_replicate:latest, shayonj/pg_easy_replicate:${{  github.event.release.tag_name  }}
+          build-args: VERSION=${{github.ref_name}}
+          tags: shayonj/pg_easy_replicate:latest, shayonj/pg_easy_replicate:${{github.ref_name}}
