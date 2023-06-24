@@ -7,8 +7,8 @@ gem build pg_easy_replicate.gemspec
 echo "=== Pushing gem ===="
 gem push pg_easy_replicate-"$VERSION".gem
 
-echo "=== Sleeping for 5s ===="
-sleep 5
+echo "=== Sleeping for 15s ===="
+sleep 15
 
 echo "=== Pushing tags to github ===="
 git tag v"$VERSION"
