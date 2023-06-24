@@ -15,7 +15,7 @@ Battle tested in production at [Tines](https://www.tines.com/) 🚀
 - [Replicating all tables with a single group](#replicating-all-tables-with-a-single-group)
   - [Config check](#config-check)
   - [Bootstrap](#bootstrap)
-  - [Bootstrap and Config Check with special user role (AWS/GCP/Custom)](#bootstrap-and-config-check-with-special-user-role--aws-gcp-custom-)
+  - [Bootstrap and Config Check with special user role in AWS or GCP](#bootstrap-and-config-check-with-special-user-role-in-aws-or-gcp)
     - [Config Check](#config-check)
     - [Bootstrap](#bootstrap-1)
   - [Start sync](#start-sync)
@@ -120,7 +120,7 @@ $ pg_easy_replicate bootstrap --group-name database-cluster-1
 ...
 ```
 
-### Bootstrap and Config Check with special user role (AWS/GCP/Custom)
+### Bootstrap and Config Check with special user role in AWS or GCP
 
 If you don't want your primary login user to have `superuser` privileges or you are on AWS or GCP, you will need to pass in the special user role that has the privileges to create role, schema, publication and subscription. This is required so `pg_easy_replicate` can create a dedicated user for replication which is granted the respective special user role to carry out its functionalities.
 
