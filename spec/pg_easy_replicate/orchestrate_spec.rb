@@ -305,7 +305,6 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         PgEasyReplicate::Query.connect(
           connection_url: connection_url,
           schema: test_schema,
-          user: "pger_su_h1a4fb",
         )
       conn1[:items].insert(name: "Foo1")
       expect(conn1[:items].first[:name]).to eq("Foo1")
@@ -315,7 +314,6 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         PgEasyReplicate::Query.connect(
           connection_url: target_connection_url,
           schema: test_schema,
-          user: "pger_su_h1a4fb",
         )
       expect(conn2[:items].first).to be_nil
 
@@ -378,6 +376,123 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       # restore connection so cleanup can happen
       described_class.restore_connections_on_source_db("cluster1")
+    end
+  end
+
+  # Note: Hard to test for special roles that act as superuser which aren't superuser, like rds_superuser
+  # So all this spec does in vanilla postgres is to raise error below.
+  describe ".switchover with special user role" do
+    before do
+      ENV["SOURCE_DB_URL"] = connection_url("jamesbond_role_regular")
+      ENV["TARGET_DB_URL"] = target_connection_url("jamesbond_role_regular")
+
+      setup_roles
+      setup_tables("jamesbond_role_regular")
+
+      PgEasyReplicate.assert_config(special_user_role: "jamesbond_super_role")
+      PgEasyReplicate.bootstrap(
+        {
+          group_name: "cluster1",
+          schema: test_schema,
+          special_user_role: "jamesbond_super_role",
+        },
+      )
+    end
+
+    after do
+      teardown_tables
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      cleanup_roles
+
+      ENV["SOURCE_DB_URL"] = connection_url
+      ENV["TARGET_DB_URL"] = target_connection_url
+    end
+
+    it "succesfully raises create subscription super user error" do
+      conn1 =
+        PgEasyReplicate::Query.connect(
+          connection_url: connection_url("jamesbond_role_regular"),
+          schema: test_schema,
+          user: "jamesbond_role_regular",
+        )
+      conn1[:items].insert(name: "Foo1")
+      expect(conn1[:items].first[:name]).to eq("Foo1")
+
+      # Expect no item in target DB
+      conn2 =
+        PgEasyReplicate::Query.connect(
+          connection_url: target_connection_url("jamesbond_role_regular"),
+          schema: test_schema,
+          user: "jamesbond_role_regular",
+        )
+      expect(conn2[:items].first).to be_nil
+
+      ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url(
+        "jamesbond_super_role",
+      )
+
+      expect do
+        described_class.start_sync(
+          { group_name: "cluster1", schema: test_schema },
+        )
+      end.to raise_error(
+        /Starting sync failed: Unable to create subscription: PG::InsufficientPrivilege: ERROR:  must be superuser to create subscriptions/,
+      )
+
+      # expect(PgEasyReplicate::Group.find("cluster1")).to include(
+      #   switchover_completed_at: nil,
+      #   created_at: kind_of(Time),
+      #   name: "cluster1",
+      #   schema_name: "pger_test",
+      #   id: kind_of(Integer),
+      #   started_at: kind_of(Time),
+      #   updated_at: kind_of(Time),
+      #   failed_at: nil,
+      #   table_names: nil,
+      # )
+
+      # conn1[:items].insert(name: "Foo2")
+
+      # sleep 10
+
+      # expect(conn1[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
+      # expect(conn2[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
+
+      # # Sequence check
+      # expect(conn1.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
+      #   [{ last_value: 2 }],
+      # )
+
+      # # Expect sequence to not be updated on target DB
+      # expect(conn2.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
+      #   [{ last_value: 1 }],
+      # )
+
+      # described_class.switchover(
+      #   group_name: "cluster1",
+      #   source_conn_string: connection_url("jamesbond_role_regular"),
+      #   target_conn_string: target_connection_url("jamesbond_role_regular"),
+      # )
+
+      # expect(PgEasyReplicate::Group.find("cluster1")).to include(
+      #   switchover_completed_at: kind_of(Time),
+      #   created_at: kind_of(Time),
+      #   name: "cluster1",
+      #   schema_name: "pger_test",
+      #   id: kind_of(Integer),
+      #   started_at: kind_of(Time),
+      #   updated_at: kind_of(Time),
+      #   failed_at: nil,
+      #   table_names: nil,
+      # )
+
+      # # Expect sequence to be updated on target DB
+      # expect(conn2.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
+      #   [{ last_value: 2 }],
+      # )
+
+      # # restore connection so cleanup can happen
+      # described_class.restore_connections_on_source_db("cluster1")
     end
   end
 end

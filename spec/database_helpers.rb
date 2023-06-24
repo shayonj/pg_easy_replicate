@@ -7,53 +7,112 @@ module DatabaseHelpers
 
   # We are use url encoded password below.
   # Original password is jamesbond123@7!'3aaR
-  def connection_url
-    "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5432/postgres"
+  def connection_url(user = "jamesbond")
+    "postgres://#{user}:jamesbond123%407%21%273aaR@localhost:5432/postgres"
   end
 
-  def target_connection_url
-    "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5433/postgres"
+  def target_connection_url(user = "jamesbond")
+    "postgres://#{user}:jamesbond123%407%21%273aaR@localhost:5433/postgres"
   end
 
-  def docker_compose_target_connection_url
-    "postgres://jamesbond:jamesbond123%407%21%273aaR@target_db/postgres"
+  def docker_compose_target_connection_url(user = "jamesbond")
+    "postgres://#{user}:jamesbond123%407%21%273aaR@target_db/postgres"
   end
 
-  def docker_compose_source_connection_url
-    return connection_url if ENV["GITHUB_WORKFLOW"] # if running in CI/github actions
-    "postgres://jamesbond:jamesbond123%407%21%273aaR@source_db/postgres"
+  def docker_compose_source_connection_url(user = "jamesbond")
+    return connection_url(user) if ENV["GITHUB_WORKFLOW"] # if running in CI/github actions
+    "postgres://#{user}:jamesbond123%407%21%273aaR@source_db/postgres"
   end
 
-  def new_dummy_table_sql
-    <<~SQL
-      CREATE SCHEMA IF NOT EXISTS #{test_schema};
-
-      CREATE TABLE IF NOT EXISTS #{test_schema}.sellers (
-        id serial PRIMARY KEY,
-        name VARCHAR ( 50 ) UNIQUE NOT NULL,
-        "createdOn" TIMESTAMP NOT NULL,
-        last_login TIMESTAMP
-      );
-    SQL
+  def setup_tables(user = "jamesbond")
+    setup(connection_url(user), user)
+    setup(target_connection_url(user), user)
   end
 
-  def setup_tables
-    setup(connection_url)
-    setup(target_connection_url)
+  def setup_roles
+    [connection_url, target_connection_url].each do |url|
+      PgEasyReplicate::Query.run(
+        query:
+          "drop role if exists jamesbond_sup; create user jamesbond_sup with login superuser password 'jamesbond123@7!''3aaR';",
+        connection_url: url,
+        user: "jamesbond",
+      )
+
+      PgEasyReplicate::Query.run(
+        query:
+          "drop role if exists no_sup; create user no_sup with login password 'jamesbond123@7!''3aaR';",
+        connection_url: url,
+        user: "jamesbond",
+      )
+
+      # setup role
+      PgEasyReplicate::Query.run(
+        query:
+          "drop role if exists jamesbond_super_role; create role jamesbond_super_role with createdb createrole replication;",
+        connection_url: url,
+        user: "jamesbond",
+      )
+
+      # setup user with role
+      sql = <<~SQL
+        drop role if exists jamesbond_role_regular;
+        create role jamesbond_role_regular WITH createrole createdb replication LOGIN PASSWORD 'jamesbond123@7!''3aaR'; grant jamesbond_super_role to jamesbond_role_regular;
+        grant all privileges on database postgres TO jamesbond_role_regular;
+      SQL
+      PgEasyReplicate::Query.run(
+        query: sql,
+        connection_url: url,
+        user: "jamesbond",
+      )
+    end
   end
 
-  def setup(connection_url)
-    PgEasyReplicate::Query.run(
-      query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
-      connection_url: connection_url,
-      user: "jamesbond",
-    )
+  def cleanup_roles
+    %w[
+      jamesbond_sup
+      no_sup
+      jamesbond_role_regular
+      jamesbond_super_role
+    ].each do |role|
+      if role == "jamesbond_role_regular"
+        PgEasyReplicate::Query.run(
+          query:
+            "revoke all privileges on database postgres from jamesbond_role_regular;",
+          connection_url: connection_url,
+          user: "jamesbond",
+        )
 
-    conn =
-      PgEasyReplicate::Query.connect(
+        PgEasyReplicate::Query.run(
+          query:
+            "revoke all privileges on database postgres from jamesbond_role_regular;",
+          connection_url: target_connection_url,
+          user: "jamesbond",
+        )
+      end
+
+      PgEasyReplicate::Query.run(
+        query: "drop role if exists #{role};",
         connection_url: connection_url,
         user: "jamesbond",
       )
+
+      PgEasyReplicate::Query.run(
+        query: "drop role if exists #{role};",
+        connection_url: target_connection_url,
+        user: "jamesbond",
+      )
+    end
+  end
+
+  def setup(connection_url, user = "jamesbond")
+    PgEasyReplicate::Query.run(
+      query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
+      connection_url: connection_url,
+      user: user,
+    )
+
+    conn =
+      PgEasyReplicate::Query.connect(connection_url: connection_url, user: user)
     conn.run(
       "CREATE SCHEMA IF NOT EXISTS #{test_schema}; SET search_path TO #{test_schema};",
     )

@@ -15,6 +15,9 @@ Battle tested in production at [Tines](https://www.tines.com/) 🚀
 - [Replicating all tables with a single group](#replicating-all-tables-with-a-single-group)
   - [Config check](#config-check)
   - [Bootstrap](#bootstrap)
+  - [Bootstrap and Config Check with special user role (AWS/GCP/Custom)](#bootstrap-and-config-check-with-special-user-role--aws-gcp-custom-)
+    - [Config Check](#config-check)
+    - [Bootstrap](#bootstrap-1)
   - [Start sync](#start-sync)
   - [Stats](#stats)
   - [Performing switchover](#performing-switchover)
@@ -22,6 +25,7 @@ Battle tested in production at [Tines](https://www.tines.com/) 🚀
 - [Switchover strategies with minimal downtime](#switchover-strategies-with-minimal-downtime)
   - [Rolling restart strategy](#rolling-restart-strategy)
   - [DNS Failover strategy](#dns-failover-strategy)
+- [Contributing](#contributing)
 
 ## Installation
 
@@ -51,7 +55,7 @@ https://hub.docker.com/r/shayonj/pg_easy_replicate
 
 - PostgreSQL 10 and later
 - Ruby 2.7 and later
-- Database user should have permissions for `SUPERUSER`
+- Database user should have permissions for `SUPERUSER` or pass in the special user role that has the privileges to create role, schema, publication and subscription on both databases. More on `--special-user-role` section below.
 - Both databases should have the same schema
 
 ## Limits
@@ -111,6 +115,31 @@ Every sync will need to be bootstrapped before you can set up the sync between t
 
 ```bash
 $ pg_easy_replicate bootstrap --group-name database-cluster-1
+
+{"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":21485,"level":30,"time":"2023-06-19T15:51:11.015-04:00","v":0,"msg":"Setting up schema","version":"0.1.0"}
+...
+```
+
+### Bootstrap and Config Check with special user role (AWS/GCP/Custom)
+
+If you don't want your primary login user to have `superuser` privileges or you are on AWS or GCP, you will need to pass in the special user role that has the privileges to create role, schema, publication and subscription. This is required so `pg_easy_replicate` can create a dedicated user for replication which is granted the respective special user role to carry out its functionalities.
+
+For AWS the special user role is `rds_superuser`, and for GCP it is `cloudsqlsuperuser`. Please refer to docs for the most up to date information.
+
+**Note**: The user in the connection url must be part of the special user role being supplied.
+
+#### Config Check
+
+```bash
+$ pg_easy_replicate config_check --special-user-role="rds_superuser"
+
+✅ Config is looking good.
+```
+
+#### Bootstrap
+
+```bash
+$ pg_easy_replicate bootstrap --group-name database-cluster-1 --special-user-role="rds_superuser"
 
 {"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":21485,"level":30,"time":"2023-06-19T15:51:11.015-04:00","v":0,"msg":"Setting up schema","version":"0.1.0"}
 ...

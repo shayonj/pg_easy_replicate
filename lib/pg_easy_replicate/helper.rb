@@ -60,6 +60,10 @@ module PgEasyReplicate
       connection_info(url)[:user]
     end
 
+    def db_name(url)
+      connection_info(url)[:dbname]
+    end
+
     def abort_with(msg)
       raise(msg) if test_env?
       abort(msg)

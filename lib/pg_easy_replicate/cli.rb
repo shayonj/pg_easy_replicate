@@ -8,8 +8,14 @@ module PgEasyReplicate
 
     desc "config_check",
          "Prints if source and target database have the required config"
-    def config_check
-      PgEasyReplicate.assert_config
+    method_option :special_user_role,
+                  aliases: "-s",
+                  desc:
+                    "Name of the role that has superuser permissions. Usually useful for AWS (rds_superuser) or GCP (cloudsqlsuperuser)."
+    def config_check(options)
+      PgEasyReplicate.assert_config(
+        special_user_role: options[:special_user_role],
+      )
 
       puts "✅ Config is looking good."
     end
@@ -18,6 +24,10 @@ module PgEasyReplicate
                   aliases: "-g",
                   required: true,
                   desc: "Name of the group to provision"
+    method_option :special_user_role,
+                  aliases: "-s",
+                  desc:
+                    "Name of the role that has superuser permissions. Usually useful with AWS (rds_superuser) or GCP (cloudsqlsuperuser)."
     desc "bootstrap",
          "Sets up temporary tables for information required during runtime"
     def bootstrap

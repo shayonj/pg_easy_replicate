@@ -4,10 +4,6 @@ RSpec.describe(PgEasyReplicate::Query) do
   describe ".run" do
     before { setup_tables }
 
-    let(:connection_url) do
-      "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5432/postgres"
-    end
-
     it "runs the query successfully" do
       result =
         described_class.run(
