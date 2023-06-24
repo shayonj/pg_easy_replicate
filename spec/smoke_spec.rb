@@ -18,7 +18,7 @@ RSpec.describe("SmokeSpec") do
       pid =
         fork do
           puts("Running insertions")
-          100.times do |i|
+          3000.times do |i|
             new_aid = last_count + (i + 1)
             sql = <<~SQL
               INSERT INTO "public"."pgbench_accounts"("aid", "bid", "abalance", "filler") VALUES(#{new_aid}, 1, 0, '0') RETURNING "aid", "bid", "abalance", "filler";
@@ -28,16 +28,29 @@ RSpec.describe("SmokeSpec") do
               connection_url: connection_url,
               user: "jamesbond",
             )
+          rescue => e
+            if e.message.include?(
+                 "cannot execute INSERT in a read-only transaction",
+               ) || e.message.include?("terminating connection")
+              PgEasyReplicate::Query.run(
+                query: sql,
+                connection_url: target_connection_url,
+                user: "jamesbond",
+              )
+            else
+              raise
+            end
           end
         end
-      Process.wait(pid)
+      Process.detach(pid)
 
-      # Start sync and switch over
-      # Its possible there are no writes happening while the swithover,
-      # which is OK otherwise the forked process will just keep looking on trying to insert
-      # in a read only connection. We can look into parralelizing writes in future.
+      system("./scripts/e2e-start.sh")
+      expect($CHILD_STATUS.success?).to be(true)
 
-      `./scripts/e2e-start.sh`
+      begin
+        Process.wait(pid)
+      rescue Errno::ECHILD #rubocop:disable Lint/SuppressedException
+      end
 
       r =
         PgEasyReplicate::Query.run(
@@ -45,7 +58,7 @@ RSpec.describe("SmokeSpec") do
           connection_url: target_connection_url,
           user: "jamesbond",
         )
-      expect(r).to eq([{ count: 500_100 }])
+      expect(r).to eq([{ count: 503_000 }])
     ensure
       begin
         Process.kill("KILL", pid) if pid
