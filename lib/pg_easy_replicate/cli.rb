@@ -12,7 +12,7 @@ module PgEasyReplicate
                   aliases: "-s",
                   desc:
                     "Name of the role that has superuser permissions. Usually useful for AWS (rds_superuser) or GCP (cloudsqlsuperuser)."
-    def config_check(options)
+    def config_check
       PgEasyReplicate.assert_config(
         special_user_role: options[:special_user_role],
       )
@@ -81,7 +81,7 @@ module PgEasyReplicate
                   required: true,
                   desc: "Name of the group previously provisioned"
     def stop_sync
-      PgEasyReplicate::Orchestrate.stop_sync(options[:group_name])
+      PgEasyReplicate::Orchestrate.stop_sync(group_name: options[:group_name])
     end
 
     desc "switchover ",

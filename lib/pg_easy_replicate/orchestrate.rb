@@ -169,7 +169,11 @@ module PgEasyReplicate
         raise "Unable to drop subscription: #{e.message}"
       end
 
-      def stop_sync(target_conn_string:, source_conn_string:, group_name:)
+      def stop_sync(
+        group_name:,
+        source_conn_string: source_db_url,
+        target_conn_string: target_db_url
+      )
         logger.info(
           "Stopping sync",
           {
