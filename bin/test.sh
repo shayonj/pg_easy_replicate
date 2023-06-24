@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -euo pipefail
+
 export SECONDARY_SOURCE_DB_URL="postgres://jamesbond:jamesbond123%407%21%273aaR@source_db/postgres"
 export SOURCE_DB_URL="postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5432/postgres"
 export TARGET_DB_URL="postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5433/postgres"

@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -euo pipefail
+
 export VERSION=$1
 echo "VERSION: ${VERSION}"
 
