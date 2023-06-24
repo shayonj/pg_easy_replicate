@@ -1,3 +1,8 @@
+## [0.1.6] - 2023-06-22
+
+- Bug fix: Support custom schema name
+- New smoke spec in CI
+
 ## [0.1.5] - 2023-06-22
 
 - Fix bug in `stop_sync`
