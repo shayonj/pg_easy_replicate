@@ -18,7 +18,7 @@ module PgEasyReplicate
           group_name: options[:group_name],
           tables: options[:tables],
           conn_string: source_db_url,
-          schema: options[:schema],
+          schema: options[:schema_name],
         )
 
         create_subscription(
@@ -30,7 +30,7 @@ module PgEasyReplicate
         Group.create(
           name: options[:group_name],
           table_names: options[:tables],
-          schema_name: options[:schema],
+          schema_name: options[:schema_name],
           started_at: Time.now.utc,
         )
       rescue => e
@@ -46,7 +46,7 @@ module PgEasyReplicate
           Group.create(
             name: options[:group_name],
             table_names: options[:tables],
-            schema_name: options[:schema],
+            schema_name: options[:schema_name],
             started_at: Time.now.utc,
             failed_at: Time.now.utc,
           )
@@ -80,6 +80,7 @@ module PgEasyReplicate
           "Adding tables up publication",
           { publication_name: publication_name(group_name) },
         )
+
         tables = tables&.split(",") || []
         unless tables.size > 0
           tables = list_all_tables(schema: schema, conn_string: conn_string)
@@ -197,11 +198,11 @@ module PgEasyReplicate
         group_name:,
         source_conn_string: source_db_url,
         target_conn_string: target_db_url,
-        lag_delta_size: DEFAULT_LAG
+        lag_delta_size: nil
       )
         group = Group.find(group_name)
 
-        watch_lag(group_name: group_name, lag: lag_delta_size)
+        watch_lag(group_name: group_name, lag: lag_delta_size || DEFAULT_LAG)
         revoke_connections_on_source_db(group_name)
         wait_for_remaining_catchup(group_name)
         refresh_sequences(

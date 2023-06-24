@@ -2,4 +2,4 @@
 --color
 --require spec_helper
 --fail-fast
---exclude-pattern spec/lib/smoke_spec.rb
+--exclude-pattern spec/smoke_spec.rb
