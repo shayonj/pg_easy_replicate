@@ -228,7 +228,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     it "succesfully" do
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       described_class.start_sync(
-        { group_name: "cluster1", schema: test_schema },
+        { group_name: "cluster1", schema_name: test_schema },
       )
 
       expect(pg_publications(connection_url: connection_url)).to eq(
@@ -267,7 +267,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       expect do
         described_class.start_sync(
-          { group_name: "cluster1", schema: test_schema },
+          { group_name: "cluster1", schema_name: test_schema },
         )
       end.to raise_error(RuntimeError, "Starting sync failed: boo")
 
@@ -319,7 +319,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       described_class.start_sync(
-        { group_name: "cluster1", schema: test_schema },
+        { group_name: "cluster1", schema_name: test_schema },
       )
 
       expect(PgEasyReplicate::Group.find("cluster1")).to include(
@@ -433,7 +433,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       expect do
         described_class.start_sync(
-          { group_name: "cluster1", schema: test_schema },
+          { group_name: "cluster1", schema_name: test_schema },
         )
       end.to raise_error(
         /Starting sync failed: Unable to create subscription: PG::InsufficientPrivilege: ERROR:  must be superuser to create subscriptions/,

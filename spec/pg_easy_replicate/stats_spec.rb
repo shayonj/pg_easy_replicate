@@ -8,7 +8,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
-        { group_name: "cluster1", schema: test_schema },
+        { group_name: "cluster1", schema_name: test_schema },
       )
     end
 
@@ -54,7 +54,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
-        { group_name: "cluster1", schema: test_schema },
+        { group_name: "cluster1", schema_name: test_schema },
       )
     end
 
@@ -93,7 +93,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
-        { group_name: "cluster1", schema: test_schema },
+        { group_name: "cluster1", schema_name: test_schema },
       )
     end
 
@@ -133,7 +133,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
-        { group_name: "cluster1", schema: test_schema },
+        { group_name: "cluster1", schema_name: test_schema },
       )
     end
 
@@ -164,7 +164,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
-        { group_name: "cluster1", schema: test_schema },
+        { group_name: "cluster1", schema_name: test_schema },
       )
     end
 
@@ -199,7 +199,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
-        { group_name: "cluster1", schema: test_schema },
+        { group_name: "cluster1", schema_name: test_schema },
       )
     end
 
