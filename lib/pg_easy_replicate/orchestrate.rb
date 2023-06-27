@@ -9,6 +9,8 @@ module PgEasyReplicate
       DEFAULT_WAIT = 5 # seconds
 
       def start_sync(options)
+        schema_name = options[:schema_name] || "public"
+
         create_publication(
           group_name: options[:group_name],
           conn_string: source_db_url,
@@ -18,7 +20,7 @@ module PgEasyReplicate
           group_name: options[:group_name],
           tables: options[:tables],
           conn_string: source_db_url,
-          schema: options[:schema_name],
+          schema: schema_name,
         )
 
         create_subscription(
@@ -30,7 +32,7 @@ module PgEasyReplicate
         Group.create(
           name: options[:group_name],
           table_names: options[:tables],
-          schema_name: options[:schema_name],
+          schema_name: schema_name,
           started_at: Time.now.utc,
         )
       rescue => e
@@ -46,7 +48,7 @@ module PgEasyReplicate
           Group.create(
             name: options[:group_name],
             table_names: options[:tables],
-            schema_name: options[:schema_name],
+            schema_name: schema_name,
             started_at: Time.now.utc,
             failed_at: Time.now.utc,
           )
