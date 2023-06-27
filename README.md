@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/shayonj/pg_easy_replicate/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/shayonj/pg_easy_replicate/actions/workflows/ci.yaml)
 [![Smoke spec](https://github.com/shayonj/pg_easy_replicate/actions/workflows/smoke.yaml/badge.svg?branch=main)](https://github.com/shayonj/pg_easy_replicate/actions/workflows/ci.yaml)
-[![Gem Version](https://badge.fury.io/rb/pg_easy_replicate.svg?1)](https://badge.fury.io/rb/pg_easy_replicate)
+[![Gem Version](https://badge.fury.io/rb/pg_easy_replicate.svg?2)](https://badge.fury.io/rb/pg_easy_replicate)
 
 `pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up [logical replication](https://www.postgresql.org/docs/current/logical-replication.html) between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database) is fully replicating, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for performing minimal downtime (up to <1min, depending) major version upgrades between two PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
 
@@ -26,6 +26,8 @@ Battle tested in production at [Tines](https://www.tines.com/) 🚀
 - [Switchover strategies with minimal downtime](#switchover-strategies-with-minimal-downtime)
   - [Rolling restart strategy](#rolling-restart-strategy)
   - [DNS Failover strategy](#dns-failover-strategy)
+- [FAQ](#faq)
+  - [Adding internal user to pgBouncer `userlist`](#adding-internal-user-to-pgbouncer-userlist)
 - [Contributing](#contributing)
 
 ## Installation
@@ -246,6 +248,12 @@ Next, you can set up a program that watches the `stats` and waits until `switcho
 In this strategy, you have a weighted based DNS system (example [AWS Route53 weighted records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-weighted.html)) where 100% of traffic goes to a primary origin and 0% to a secondary origin. The primary origin here is the DNS host for your source database and secondary origin is the DNS host for your target database. You can set up your application ahead of time to interact with the database using DNS from the weighted group.
 
 Next, you can set up a program that watches the `stats` and waits until `switchover_completed_at` is reporting as `true`. Once that happens it updates the weight in the DNS weighted group where 100% of the requests now go to the new/target database. Note: Keeping a low `ttl` is recommended.
+
+## FAQ
+
+### Adding internal user to pgBouncer `userlist`
+
+`pg_easy_replicate` creates a special user to orchestrate the replication. If you us pgBouncer, you may need to allow `pger_su_h1a4fb` as a user that can perform login by adding it to the `userlist`.
 
 ## Contributing
 
