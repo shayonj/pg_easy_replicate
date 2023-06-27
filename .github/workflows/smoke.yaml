@@ -15,6 +15,7 @@ concurrency:
 jobs:
   smoke-spec:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     name: Ruby ${{ matrix.ruby }} - PG ${{ matrix.pg.from }} -> PG ${{ matrix.pg.to }}
     strategy:
       matrix:

@@ -77,6 +77,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         group_name: "cluster1",
         schema: test_schema,
         conn_string: connection_url,
+        tables: "items,sellers",
       )
 
       expect(pg_publication_tables(connection_url: connection_url)).to eq(
@@ -132,7 +133,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
           schema: test_schema,
           conn_string: connection_url,
         )
-      expect(r).to match_array(%w[sellers items])
+      expect(r).to eq("items,sellers")
     end
   end
 
@@ -214,7 +215,10 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
   end
 
   describe ".start_sync" do
-    before { PgEasyReplicate.bootstrap({ group_name: "cluster1" }) }
+    before do
+      setup_tables
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
+    end
 
     after do
       described_class.stop_sync(
@@ -223,12 +227,14 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         target_conn_string: target_connection_url,
       )
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      teardown_tables
     end
 
     it "succesfully" do
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       described_class.start_sync(
-        { group_name: "cluster1", schema_name: test_schema },
+        group_name: "cluster1",
+        schema_name: test_schema,
       )
 
       expect(pg_publications(connection_url: connection_url)).to eq(
@@ -255,7 +261,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         started_at: kind_of(Time),
         updated_at: kind_of(Time),
         failed_at: nil,
-        table_names: nil,
+        table_names: "items,sellers",
       )
     end
 
@@ -284,7 +290,60 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         started_at: kind_of(Time),
         updated_at: kind_of(Time),
         failed_at: kind_of(Time),
-        table_names: nil,
+        table_names: "items,sellers",
+      )
+    end
+  end
+
+  describe ".run_vacuum_analyze" do
+    before do
+      setup_tables
+      PgEasyReplicate.bootstrap({ group_name: "cluster1", schema: test_schema })
+
+      ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
+      PgEasyReplicate::Orchestrate.start_sync(
+        { group_name: "cluster1", schema_name: test_schema },
+      )
+    end
+
+    after do
+      described_class.stop_sync(
+        group_name: "cluster1",
+        source_conn_string: connection_url,
+        target_conn_string: target_connection_url,
+      )
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      teardown_tables
+    end
+
+    it "succesfully" do
+      expect(
+        vacuum_stats(url: target_connection_url, schema: test_schema),
+      ).to include(
+        { last_analyze: nil, last_vacuum: nil, relname: "sellers" },
+        { last_analyze: nil, last_vacuum: nil, relname: "items" },
+      )
+
+      described_class.run_vacuum_analyze(
+        conn_string: target_connection_url,
+        schema: test_schema,
+        tables: PgEasyReplicate::Group.find("cluster1")[:table_names],
+      )
+      sleep 2
+
+      expect(
+        vacuum_stats(url: target_connection_url, schema: test_schema),
+      ).to include(
+        {
+          last_analyze: kind_of(Time),
+          last_vacuum: kind_of(Time),
+          relname: "sellers",
+        },
+        {
+          last_analyze: kind_of(Time),
+          last_vacuum: kind_of(Time),
+          relname: "items",
+        },
       )
     end
   end
@@ -331,7 +390,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         started_at: kind_of(Time),
         updated_at: kind_of(Time),
         failed_at: nil,
-        table_names: nil,
+        table_names: "items,sellers",
       )
 
       conn1[:items].insert(name: "Foo2")
@@ -366,7 +425,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         started_at: kind_of(Time),
         updated_at: kind_of(Time),
         failed_at: nil,
-        table_names: nil,
+        table_names: "items,sellers",
       )
 
       # Expect sequence to be updated on target DB
@@ -376,6 +435,21 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       # restore connection so cleanup can happen
       described_class.restore_connections_on_source_db("cluster1")
+
+      expect(
+        vacuum_stats(url: target_connection_url, schema: test_schema),
+      ).to include(
+        {
+          last_analyze: kind_of(Time),
+          last_vacuum: kind_of(Time),
+          relname: "sellers",
+        },
+        {
+          last_analyze: kind_of(Time),
+          last_vacuum: kind_of(Time),
+          relname: "items",
+        },
+      )
     end
   end
 

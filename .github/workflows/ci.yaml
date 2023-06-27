@@ -15,6 +15,7 @@ concurrency:
 jobs:
   rspec:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     name: Ruby ${{ matrix.ruby }} - PG ${{ matrix.pg.from }} -> PG ${{ matrix.pg.to }}
     strategy:
       matrix:
@@ -92,6 +93,7 @@ jobs:
   build-push-image:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [rspec]
     steps:
       - name: Set up QEMU
