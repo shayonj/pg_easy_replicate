@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    pg_easy_replicate (0.1.6)
+    pg_easy_replicate (0.1.7)
       ougai (~> 2.0.0)
       pg (~> 1.5.3)
       sequel (~> 5.69.0)
