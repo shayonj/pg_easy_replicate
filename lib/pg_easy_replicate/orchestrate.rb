@@ -10,6 +10,12 @@ module PgEasyReplicate
 
       def start_sync(options)
         schema_name = options[:schema_name] || "public"
+        tables =
+          determine_tables(
+            schema: schema_name,
+            conn_string: source_db_url,
+            list: options[:tables],
+          )
 
         create_publication(
           group_name: options[:group_name],
@@ -18,7 +24,7 @@ module PgEasyReplicate
 
         add_tables_to_publication(
           group_name: options[:group_name],
-          tables: options[:tables],
+          tables: tables,
           conn_string: source_db_url,
           schema: schema_name,
         )
@@ -31,7 +37,7 @@ module PgEasyReplicate
 
         Group.create(
           name: options[:group_name],
-          table_names: options[:tables],
+          table_names: tables,
           schema_name: schema_name,
           started_at: Time.now.utc,
         )
@@ -47,7 +53,7 @@ module PgEasyReplicate
         else
           Group.create(
             name: options[:group_name],
-            table_names: options[:tables],
+            table_names: tables,
             schema_name: schema_name,
             started_at: Time.now.utc,
             failed_at: Time.now.utc,
@@ -83,19 +89,16 @@ module PgEasyReplicate
           { publication_name: publication_name(group_name) },
         )
 
-        tables = tables&.split(",") || []
-        unless tables.size > 0
-          tables = list_all_tables(schema: schema, conn_string: conn_string)
-        end
-
-        tables.map do |table_name|
-          Query.run(
-            query:
-              "ALTER PUBLICATION #{publication_name(group_name)} ADD TABLE \"#{table_name}\"",
-            connection_url: conn_string,
-            schema: schema,
-          )
-        end
+        tables
+          .split(",")
+          .map do |table_name|
+            Query.run(
+              query:
+                "ALTER PUBLICATION #{publication_name(group_name)} ADD TABLE \"#{table_name}\"",
+              connection_url: conn_string,
+              schema: schema,
+            )
+          end
       rescue => e
         raise "Unable to add tables to publication: #{e.message}"
       end
@@ -104,11 +107,12 @@ module PgEasyReplicate
         Query
           .run(
             query:
-              "SELECT table_name FROM information_schema.tables WHERE table_schema = '#{schema}'",
+              "SELECT table_name FROM information_schema.tables WHERE table_schema = '#{schema}' ORDER BY table_name",
             connection_url: conn_string,
           )
           .map(&:values)
           .flatten
+          .join(",")
       end
 
       def drop_publication(group_name:, conn_string:)
@@ -204,6 +208,11 @@ module PgEasyReplicate
       )
         group = Group.find(group_name)
 
+        run_vacuum_analyze(
+          conn_string: target_conn_string,
+          tables: group[:table_names],
+          schema: group[:schema_name],
+        )
         watch_lag(group_name: group_name, lag: lag_delta_size || DEFAULT_LAG)
         revoke_connections_on_source_db(group_name)
         wait_for_remaining_catchup(group_name)
@@ -212,6 +221,12 @@ module PgEasyReplicate
           schema: group[:schema_name],
         )
         mark_switchover_complete(group_name)
+        # Run vacuum analyze to refresh the planner post switchover
+        run_vacuum_analyze(
+          conn_string: target_conn_string,
+          tables: group[:table_names],
+          schema: group[:schema_name],
+        )
         drop_subscription(
           group_name: group_name,
           target_conn_string: target_conn_string,
@@ -320,8 +335,38 @@ module PgEasyReplicate
         raise "Unable to refresh sequences: #{e.message}"
       end
 
+      def run_vacuum_analyze(conn_string:, tables:, schema:)
+        tables
+          .split(",")
+          .each do |t|
+            logger.info(
+              "Running vacuum analyze on #{t}",
+              schema: schema,
+              table: t,
+            )
+            Query.run(
+              query: "VACUUM VERBOSE ANALYZE #{t}",
+              connection_url: conn_string,
+              schema: schema,
+              transaction: false,
+            )
+          end
+      rescue => e
+        raise "Unable to run vacuum and analyze: #{e.message}"
+      end
+
       def mark_switchover_complete(group_name)
         Group.update(group_name: group_name, switchover_completed_at: Time.now)
+      end
+
+      private
+
+      def determine_tables(schema:, conn_string:, list: "")
+        tables = list&.split(",") || []
+        unless tables.size > 0
+          return list_all_tables(schema: schema, conn_string: conn_string)
+        end
+        ""
       end
     end
   end

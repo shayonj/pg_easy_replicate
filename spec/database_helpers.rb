@@ -202,6 +202,15 @@ module DatabaseHelpers
     )
   end
 
+  def vacuum_stats(url:, schema:)
+    PgEasyReplicate::Query.run(
+      connection_url: url,
+      schema: schema,
+      query:
+        "SELECT last_vacuum, last_analyze, relname FROM pg_stat_all_tables WHERE schemaname = '#{schema}'",
+    )
+  end
+
   def self.populate_env_vars
     ENV[
       "SOURCE_DB_URL"
