@@ -18,7 +18,7 @@ RSpec.describe("SmokeSpec") do
       pid =
         fork do
           puts("Running insertions")
-          2.times do |i|
+          3000.times do |i|
             new_aid = last_count + (i + 1)
             sql = <<~SQL
               INSERT INTO "public"."pgbench_accounts"("aid", "bid", "abalance", "filler") VALUES(#{new_aid}, 1, 0, '0') RETURNING "aid", "bid", "abalance", "filler";
@@ -58,7 +58,7 @@ RSpec.describe("SmokeSpec") do
           connection_url: target_connection_url,
           user: "jamesbond",
         )
-      expect(r).to eq([{ count: 500_002 }])
+      expect(r).to eq([{ count: 503_000 }])
       expect(
         vacuum_stats(url: target_connection_url, schema: "public"),
       ).to include(
