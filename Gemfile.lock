@@ -18,6 +18,7 @@ GEM
       thor
       tilt
     json (2.6.3)
+    language_server-protocol (3.17.0.3)
     method_source (1.0.0)
     oj (3.14.3)
     ougai (2.0.0)
@@ -50,8 +51,9 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.12.0)
     rspec-support (3.12.0)
-    rubocop (1.52.1)
+    rubocop (1.54.0)
       json (~> 2.3)
+      language_server-protocol (>= 3.17.0)
       parallel (~> 1.10)
       parser (>= 3.2.2.3)
       rainbow (>= 2.2.2, < 4.0)
