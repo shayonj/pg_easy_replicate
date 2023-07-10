@@ -29,6 +29,13 @@ module PgEasyReplicate
           schema: schema_name,
         )
 
+        indexes =
+          Index.remove(
+            conn_string: secondary_source_db_url || source_db_url,
+            tables: tables,
+            schema: schema_name,
+          )
+
         create_subscription(
           group_name: options[:group_name],
           source_conn_string: secondary_source_db_url || source_db_url,
@@ -207,6 +214,12 @@ module PgEasyReplicate
         lag_delta_size: nil
       )
         group = Group.find(group_name)
+
+        Index.recreate(
+          conn_string: target_conn_string,
+          tables: group[:table_names],
+          schema: group[:schema_name],
+        )
 
         run_vacuum_analyze(
           conn_string: target_conn_string,
