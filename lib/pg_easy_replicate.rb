@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "English"
 require "json"
 require "ougai"
 require "pg"
@@ -15,15 +16,20 @@ require "pg_easy_replicate/cli"
 
 Sequel.default_timezone = :utc
 module PgEasyReplicate
+  SCHEMA_FILE_LOCATION = "/tmp/pger_schema.sql"
+
   class Error < StandardError
   end
 
   extend Helper
 
   class << self
-    def config(special_user_role: nil)
+    def config(special_user_role: nil, copy_schema: false)
       abort_with("SOURCE_DB_URL is missing") if source_db_url.nil?
       abort_with("TARGET_DB_URL is missing") if target_db_url.nil?
+
+      system("which pg_dump")
+      pg_dump_exists = $CHILD_STATUS.success?
 
       @config ||=
         begin
@@ -47,14 +53,20 @@ module PgEasyReplicate
                 connection_url: target_db_url,
                 user: db_user(target_db_url),
               ),
+            pg_dump_exists: pg_dump_exists,
           }
         rescue => e
           abort_with("Unable to check config: #{e.message}")
         end
     end
 
-    def assert_config(special_user_role: nil)
-      config_hash = config(special_user_role: special_user_role)
+    def assert_config(special_user_role: nil, copy_schema: false)
+      config_hash =
+        config(special_user_role: special_user_role, copy_schema: copy_schema)
+
+      if copy_schema && !config_hash.dig(:pg_dump_exists)
+        abort_with("pg_dump must exist if copy_schema (-c) is passed")
+      end
 
       unless assert_wal_level_logical(config_hash.dig(:source_db))
         abort_with("WAL_LEVEL should be LOGICAL on source DB")
@@ -74,7 +86,15 @@ module PgEasyReplicate
 
     def bootstrap(options)
       logger.info("Setting up schema")
-      setup_schema
+      setup_internal_schema
+
+      if options[:copy_schema]
+        logger.info("Setting up schema on targer database")
+        copy_schema(
+          source_conn_string: source_db_url,
+          target_conn_string: target_db_url,
+        )
+      end
 
       logger.info("Setting up replication user on source database")
       create_user(
@@ -141,7 +161,7 @@ module PgEasyReplicate
       raise "Unable to drop schema: #{e.message}"
     end
 
-    def setup_schema
+    def setup_internal_schema
       sql = <<~SQL
         create schema if not exists #{internal_schema_name};
         grant usage on schema #{internal_schema_name} to #{db_user(source_db_url)};
@@ -169,7 +189,30 @@ module PgEasyReplicate
         end
     end
 
-    private
+    def copy_schema(source_conn_string:, target_conn_string:)
+      export_schema(conn_string: source_conn_string)
+      import_schema(conn_string: target_conn_string)
+    end
+
+    def export_schema(conn_string:)
+      result = `pg_dump #{conn_string} -f #{SCHEMA_FILE_LOCATION} --schema-only`
+      # success = $?.success?
+      puts result
+
+      # if success
+      # else
+      #   # failed with result
+      # end
+    end
+
+    def import_schema(conn_string:)
+      result = `psql -f schemadump.sql #{conn_string}`
+      # success = $?.success?
+      puts result
+      # if success
+      # else
+      # end
+    end
 
     def assert_wal_level_logical(db_config)
       db_config&.find do |r|

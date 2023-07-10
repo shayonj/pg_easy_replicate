@@ -26,6 +26,7 @@ RSpec.describe(PgEasyReplicate) do
             { name: "max_worker_processes", setting: "8" },
             { name: "wal_level", setting: "logical" },
           ],
+          pg_dump_exists: true,
         },
       )
     end
@@ -127,9 +128,9 @@ RSpec.describe(PgEasyReplicate) do
       end
     end
 
-    describe ".setup_schema" do
+    describe ".setup_internal_schema" do
       it "sets up the schema" do
-        described_class.setup_schema
+        described_class.setup_internal_schema
 
         expect(get_schema).to eq([{ schema_name: "pger" }])
       end
@@ -143,7 +144,7 @@ RSpec.describe(PgEasyReplicate) do
       end
 
       it "drops up the schema" do
-        described_class.setup_schema
+        described_class.setup_internal_schema
         described_class.drop_schema
 
         expect(get_schema).to eq([])
