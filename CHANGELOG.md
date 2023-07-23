@@ -1,3 +1,7 @@
+## [0.1.8] - 2023-07-23
+
+- Introduce --copy_schema via pg_dump - #35
+
 ## [0.1.7] - 2023-06-26
 
 - Perform smoke test with retries in CI - #26
