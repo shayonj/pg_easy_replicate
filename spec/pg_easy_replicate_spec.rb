@@ -26,6 +26,7 @@ RSpec.describe(PgEasyReplicate) do
             { name: "max_worker_processes", setting: "8" },
             { name: "wal_level", setting: "logical" },
           ],
+          pg_dump_exists: true,
         },
       )
     end
@@ -89,6 +90,22 @@ RSpec.describe(PgEasyReplicate) do
           "User on target database does not have super user privilege",
         )
       end
+
+      it "raises error when copy schema is present and pg_dump is not" do
+        allow(described_class).to receive(:config).and_return(
+          {
+            source_db_is_super_user: true,
+            target_db_is_super_user: true,
+            target_db: [{ name: "wal_level", setting: "logical" }],
+            source_db: [{ name: "wal_level", setting: "logical" }],
+            pg_dump_exists: false,
+          },
+        )
+
+        expect {
+          described_class.assert_config(copy_schema: true)
+        }.to raise_error("pg_dump must exist if copy_schema (-c) is passed")
+      end
     end
 
     describe ".is_super_user?" do
@@ -127,15 +144,15 @@ RSpec.describe(PgEasyReplicate) do
       end
     end
 
-    describe ".setup_schema" do
+    describe ".setup_internal_schema" do
       it "sets up the schema" do
-        described_class.setup_schema
+        described_class.setup_internal_schema
 
         expect(get_schema).to eq([{ schema_name: "pger" }])
       end
     end
 
-    describe ".drop_schema" do
+    describe ".drop_internal_schema" do
       before { described_class.bootstrap({ group_name: "cluster1" }) }
 
       after do
@@ -143,16 +160,20 @@ RSpec.describe(PgEasyReplicate) do
       end
 
       it "drops up the schema" do
-        described_class.setup_schema
-        described_class.drop_schema
+        described_class.setup_internal_schema
+        described_class.drop_internal_schema
 
         expect(get_schema).to eq([])
       end
     end
 
     describe ".bootstrap" do
+      before { setup_tables("jamesbond", setup_target_db: false) }
+
       after do
         described_class.cleanup({ everything: true, group_name: "cluster1" })
+        teardown_tables
+        `rm #{PgEasyReplicate::SCHEMA_FILE_LOCATION}`
       end
 
       it "successfully with everything" do
@@ -198,6 +219,58 @@ RSpec.describe(PgEasyReplicate) do
           ],
         )
       end
+
+      it "successfully with copy_schema" do
+        described_class.bootstrap({ group_name: "cluster1", copy_schema: true })
+
+        # Check schema exists
+        expect(get_schema).to eq([{ schema_name: "pger" }])
+
+        # Check table exists
+        expect(groups_table_exists?).to eq([{ table_name: "groups" }])
+
+        # Check user on source database
+        expect(
+          user_permissions(
+            connection_url: connection_url,
+            group_name: "cluster1",
+          ),
+        ).to eq(
+          [
+            {
+              rolcanlogin: true,
+              rolcreatedb: true,
+              rolcreaterole: true,
+              rolsuper: true,
+            },
+          ],
+        )
+
+        # Check user exists on target database
+        expect(
+          user_permissions(
+            connection_url: target_connection_url,
+            group_name: "cluster1",
+          ),
+        ).to eq(
+          [
+            {
+              rolcanlogin: true,
+              rolcreatedb: true,
+              rolcreaterole: true,
+              rolsuper: true,
+            },
+          ],
+        )
+
+        conn =
+          PgEasyReplicate::Query.connect(
+            connection_url: target_connection_url,
+            schema: test_schema,
+            user: "jamesbond",
+          )
+        expect(conn.fetch("SELECT * FROM items").to_a).to eq([])
+      end
     end
 
     describe ".cleanup" do
@@ -232,6 +305,59 @@ RSpec.describe(PgEasyReplicate) do
         expect(pg_publications(connection_url: connection_url)).to eq([])
         expect(pg_subscriptions(connection_url: target_connection_url)).to eq(
           [],
+        )
+      end
+    end
+
+    describe ".export_schema" do
+      before { setup_tables }
+
+      after do
+        teardown_tables
+        `rm #{PgEasyReplicate::SCHEMA_FILE_LOCATION}`
+      end
+
+      it "succesfully" do
+        described_class.export_schema(conn_string: connection_url)
+        file_contents = File.read(PgEasyReplicate::SCHEMA_FILE_LOCATION)
+        expect(file_contents).to match(/PostgreSQL database dump complete/)
+      end
+
+      it "raises error" do
+        expect {
+          described_class.export_schema(conn_string: "postgres://foo@bar")
+        }.to raise_error(
+          /Unable to export schema: pg_dump: error: could not translate host name "bar"/,
+        )
+      end
+    end
+
+    describe ".import_schema" do
+      before { setup_tables("jamesbond", setup_target_db: false) }
+
+      after do
+        teardown_tables
+        `rm #{PgEasyReplicate::SCHEMA_FILE_LOCATION}`
+      end
+
+      it "succesfully" do
+        described_class.export_schema(conn_string: connection_url)
+        described_class.import_schema(conn_string: target_connection_url)
+
+        conn =
+          PgEasyReplicate::Query.connect(
+            connection_url: target_connection_url,
+            schema: test_schema,
+            user: "jamesbond",
+          )
+        expect(conn.fetch("SELECT * FROM items").to_a).to eq([])
+      end
+
+      it "raises error" do
+        expect {
+          described_class.import_schema(conn_string: "postgres://foo@bar")
+        }.to raise_error(
+          /Unable to import schema: psql: error: could not translate host name "bar"/,
         )
       end
     end

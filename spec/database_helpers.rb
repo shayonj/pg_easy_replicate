@@ -24,9 +24,9 @@ module DatabaseHelpers
     "postgres://#{user}:jamesbond123%407%21%273aaR@source_db/postgres"
   end
 
-  def setup_tables(user = "jamesbond")
+  def setup_tables(user = "jamesbond", setup_target_db: true)
     setup(connection_url(user), user)
-    setup(target_connection_url(user), user)
+    setup(target_connection_url(user), user) if setup_target_db
   end
 
   def setup_roles
