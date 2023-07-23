@@ -4,7 +4,7 @@ RSpec.describe(PgEasyReplicate::Group) do
   describe ".setup" do
     before do
       PgEasyReplicate.bootstrap({ group_name: "cluster1" })
-      PgEasyReplicate.setup_schema
+      PgEasyReplicate.setup_internal_schema
     end
 
     after do

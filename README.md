@@ -59,7 +59,6 @@ https://hub.docker.com/r/shayonj/pg_easy_replicate
 - PostgreSQL 10 and later
 - Ruby 2.7 and later
 - Database user should have permissions for `SUPERUSER` or pass in the special user role that has the privileges to create role, schema, publication and subscription on both databases. More on `--special-user-role` section below.
-- Both databases should have the same schema
 
 ## Limits
 
@@ -117,7 +116,7 @@ $ pg_easy_replicate config_check
 Every sync will need to be bootstrapped before you can set up the sync between two databases. Bootstrap creates a new super user to perform the orchestration required during the rest of the process. It also creates some internal metadata tables for record keeping.
 
 ```bash
-$ pg_easy_replicate bootstrap --group-name database-cluster-1
+$ pg_easy_replicate bootstrap --group-name database-cluster-1 --copy-schema
 
 {"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":21485,"level":30,"time":"2023-06-19T15:51:11.015-04:00","v":0,"msg":"Setting up schema","version":"0.1.0"}
 ...
@@ -134,7 +133,7 @@ For AWS the special user role is `rds_superuser`, and for GCP it is `cloudsqlsup
 #### Config Check
 
 ```bash
-$ pg_easy_replicate config_check --special-user-role="rds_superuser"
+$ pg_easy_replicate config_check --special-user-role="rds_superuser" --copy-schema
 
 ✅ Config is looking good.
 ```
@@ -142,7 +141,7 @@ $ pg_easy_replicate config_check --special-user-role="rds_superuser"
 #### Bootstrap
 
 ```bash
-$ pg_easy_replicate bootstrap --group-name database-cluster-1 --special-user-role="rds_superuser"
+$ pg_easy_replicate bootstrap --group-name database-cluster-1 --special-user-role="rds_superuser" --copy-schema
 
 {"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":21485,"level":30,"time":"2023-06-19T15:51:11.015-04:00","v":0,"msg":"Setting up schema","version":"0.1.0"}
 ...
@@ -219,12 +218,12 @@ By default all tables are added for replication but you can create multiple grou
 
 ```bash
 
-$ pg_easy_replicate bootstrap --group-name database-cluster-1
+$ pg_easy_replicate bootstrap --group-name database-cluster-1 --copy-schema
 $ pg_easy_replicate start_sync --group-name database-cluster-1 --schema-name public --tables "users, posts, events"
 
 ...
 
-$ pg_easy_replicate bootstrap --group-name database-cluster-2
+$ pg_easy_replicate bootstrap --group-name database-cluster-2 --copy-schema
 $ pg_easy_replicate start_sync --group-name database-cluster-2 --schema-name public --tables "comments, views"
 
 ...

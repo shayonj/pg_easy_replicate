@@ -12,9 +12,14 @@ module PgEasyReplicate
                   aliases: "-s",
                   desc:
                     "Name of the role that has superuser permissions. Usually useful for AWS (rds_superuser) or GCP (cloudsqlsuperuser)."
+    method_option :copy_schema,
+                  aliases: "-c",
+                  boolean: true,
+                  desc: "Copy schema to the new database"
     def config_check
       PgEasyReplicate.assert_config(
         special_user_role: options[:special_user_role],
+        copy_schema: options[:copy_schema],
       )
 
       puts "✅ Config is looking good."
@@ -28,6 +33,10 @@ module PgEasyReplicate
                   aliases: "-s",
                   desc:
                     "Name of the role that has superuser permissions. Usually useful with AWS (rds_superuser) or GCP (cloudsqlsuperuser)."
+    method_option :copy_schema,
+                  aliases: "-c",
+                  boolean: true,
+                  desc: "Copy schema to the new database"
     desc "bootstrap",
          "Sets up temporary tables for information required during runtime"
     def bootstrap
