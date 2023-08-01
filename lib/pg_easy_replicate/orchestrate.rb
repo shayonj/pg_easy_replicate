@@ -107,7 +107,11 @@ module PgEasyReplicate
         Query
           .run(
             query:
-              "SELECT table_name FROM information_schema.tables WHERE table_schema = '#{schema}' ORDER BY table_name",
+              "SELECT table_name
+               FROM information_schema.tables
+               WHERE table_schema = '#{schema}' AND
+                 table_type = 'BASE TABLE'
+               ORDER BY table_name",
             connection_url: conn_string,
           )
           .map(&:values)
