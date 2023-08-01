@@ -43,6 +43,10 @@ module PgEasyReplicate
         .downcase
     end
 
+    def quote_identifier(sql_ident)
+      PG::Connection.quote_ident(sql_ident)
+    end
+
     def test_env?
       ENV.fetch("RACK_ENV", nil) == "test"
     end
