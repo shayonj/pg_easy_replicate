@@ -94,7 +94,8 @@ module PgEasyReplicate
           .map do |table_name|
             Query.run(
               query:
-                "ALTER PUBLICATION #{publication_name(group_name)} ADD TABLE \"#{table_name}\"",
+                "ALTER PUBLICATION #{quote_identifier(publication_name(group_name))}
+                        ADD TABLE #{quote_identifier(table_name)}",
               connection_url: conn_string,
               schema: schema,
             )
@@ -125,7 +126,7 @@ module PgEasyReplicate
           { publication_name: publication_name(group_name) },
         )
         Query.run(
-          query: "DROP PUBLICATION IF EXISTS #{publication_name(group_name)}",
+          query: "DROP PUBLICATION IF EXISTS #{quote_identifier(publication_name(group_name))}",
           connection_url: conn_string,
           user: db_user(conn_string),
         )
@@ -148,7 +149,9 @@ module PgEasyReplicate
 
         Query.run(
           query:
-            "CREATE SUBSCRIPTION #{subscription_name(group_name)} CONNECTION '#{source_conn_string}' PUBLICATION #{publication_name(group_name)}",
+            "CREATE SUBSCRIPTION #{quote_identifier(subscription_name(group_name))}
+                      CONNECTION '#{source_conn_string}'
+                      PUBLICATION #{quote_identifier(publication_name(group_name))}",
           connection_url: target_conn_string,
           user: db_user(target_conn_string),
           transaction: false,

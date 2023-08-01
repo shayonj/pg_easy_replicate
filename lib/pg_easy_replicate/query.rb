@@ -17,12 +17,12 @@ module PgEasyReplicate
         if transaction
           r =
             conn.transaction do
-              conn.run("SET search_path to #{schema}") if schema
+              conn.run("SET search_path to #{quote_identifier(schema)}") if schema
               conn.run("SET statement_timeout to '5s'")
               conn.fetch(query).to_a
             end
         else
-          conn.run("SET search_path to #{schema}") if schema
+          conn.run("SET search_path to #{quote_identifier(schema)}") if schema
           conn.run("SET statement_timeout to '5s'")
           r = conn.fetch(query).to_a
         end
