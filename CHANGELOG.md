@@ -1,3 +1,13 @@
+## [0.1.9] - 2023-08-01
+
+- Exclude views, temporary tables and foreign tables from #list_all_tables - #39
+- Add quote_identifier helper for SQL identifiers. - #40
+- Escape db user name in queries - #42
+- Require english lib so that $CHILD_STATUS is loaded - #43
+- Bump rubocop from 1.54.2 to 1.55.0 - #37
+- Bump rubocop-rspec from 2.22.0 to 2.23.0 - #36
+- Quote indent username, dbname and schema in all places - #44
+
 ## [0.1.8] - 2023-07-23
 
 - Introduce --copy_schema via pg_dump - #35
