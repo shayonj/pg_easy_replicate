@@ -43,7 +43,7 @@ module PgEasyReplicate
         .downcase
     end
 
-    def quote_identifier(sql_ident)
+    def quote_ident(sql_ident)
       PG::Connection.quote_ident(sql_ident)
     end
 

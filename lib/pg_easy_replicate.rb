@@ -164,8 +164,8 @@ module PgEasyReplicate
     def setup_internal_schema
       sql = <<~SQL
         create schema if not exists #{internal_schema_name};
-        grant usage on schema #{internal_schema_name} to #{db_user(source_db_url)};
-        grant create on schema #{internal_schema_name} to #{db_user(source_db_url)};
+        grant usage on schema #{internal_schema_name} to #{quote_ident(db_user(source_db_url))};
+        grant create on schema #{internal_schema_name} to #{quote_ident(db_user(source_db_url))};
       SQL
 
       Query.run(
