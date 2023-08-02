@@ -153,7 +153,8 @@ module PgEasyReplicate
 
     def drop_internal_schema
       Query.run(
-        query: "DROP SCHEMA IF EXISTS #{internal_schema_name} CASCADE",
+        query:
+          "DROP SCHEMA IF EXISTS #{quote_ident(internal_schema_name)} CASCADE",
         connection_url: source_db_url,
         schema: internal_schema_name,
         user: db_user(target_db_url),
@@ -164,9 +165,9 @@ module PgEasyReplicate
 
     def setup_internal_schema
       sql = <<~SQL
-        create schema if not exists #{internal_schema_name};
-        grant usage on schema #{internal_schema_name} to #{quote_ident(db_user(source_db_url))};
-        grant create on schema #{internal_schema_name} to #{quote_ident(db_user(source_db_url))};
+        create schema if not exists #{quote_ident(internal_schema_name)};
+        grant usage on schema #{quote_ident(internal_schema_name)} to #{quote_ident(db_user(source_db_url))};
+        grant create on schema #{quote_ident(internal_schema_name)} to #{quote_ident(db_user(source_db_url))};
       SQL
 
       Query.run(
@@ -274,9 +275,9 @@ module PgEasyReplicate
       password = connection_info(conn_string)[:password].gsub("'") { "''" }
 
       sql = <<~SQL
-        drop role if exists #{internal_user_name};
-        create role #{internal_user_name} with password '#{password}' login createdb createrole;
-        grant all privileges on database #{db_name(conn_string)} TO #{internal_user_name};
+        drop role if exists #{quote_ident(internal_user_name)};
+        create role #{quote_ident(internal_user_name)} with password '#{password}' login createdb createrole;
+        grant all privileges on database #{quote_ident(db_name(conn_string))} TO #{quote_ident(internal_user_name)};
       SQL
 
       Query.run(
@@ -288,9 +289,9 @@ module PgEasyReplicate
 
       sql =
         if special_user_role
-          "grant #{special_user_role} to #{internal_user_name};"
+          "grant #{quote_ident(special_user_role)} to #{quote_ident(internal_user_name)};"
         else
-          "alter user #{internal_user_name} with superuser;"
+          "alter user #{quote_ident(internal_user_name)} with superuser;"
         end
 
       Query.run(
@@ -303,7 +304,7 @@ module PgEasyReplicate
       return unless grant_permissions_on_schema
       Query.run(
         query:
-          "grant all on schema #{internal_schema_name} to #{internal_user_name}",
+          "grant all on schema #{quote_ident(internal_schema_name)} to #{quote_ident(internal_user_name)}",
         connection_url: conn_string,
         user: db_user(conn_string),
         transaction: false,
@@ -314,7 +315,7 @@ module PgEasyReplicate
 
     def drop_user(conn_string:, group_name:)
       sql = <<~SQL
-       revoke all privileges on database #{db_name(conn_string)} from #{internal_user_name};
+       revoke all privileges on database #{db_name(conn_string)} from #{quote_ident(internal_user_name)};
       SQL
       Query.run(
         query: sql,
@@ -323,7 +324,7 @@ module PgEasyReplicate
       )
 
       sql = <<~SQL
-        drop role if exists #{internal_user_name};
+        drop role if exists #{quote_ident(internal_user_name)};
       SQL
 
       Query.run(

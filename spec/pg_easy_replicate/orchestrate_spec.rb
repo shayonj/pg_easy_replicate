@@ -457,18 +457,18 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
   # So all this spec does in vanilla postgres is to raise error below.
   describe ".switchover with special user role" do
     before do
-      ENV["SOURCE_DB_URL"] = connection_url("jamesbond_role_regular")
-      ENV["TARGET_DB_URL"] = target_connection_url("jamesbond_role_regular")
+      ENV["SOURCE_DB_URL"] = connection_url("james-bond_role_regular")
+      ENV["TARGET_DB_URL"] = target_connection_url("james-bond_role_regular")
 
       setup_roles
-      setup_tables("jamesbond_role_regular")
+      setup_tables("james-bond_role_regular")
 
-      PgEasyReplicate.assert_config(special_user_role: "jamesbond_super_role")
+      PgEasyReplicate.assert_config(special_user_role: "james-bond_super_role")
       PgEasyReplicate.bootstrap(
         {
           group_name: "cluster1",
           schema: test_schema,
-          special_user_role: "jamesbond_super_role",
+          special_user_role: "james-bond_super_role",
         },
       )
     end
@@ -485,9 +485,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     it "succesfully raises create subscription super user error" do
       conn1 =
         PgEasyReplicate::Query.connect(
-          connection_url: connection_url("jamesbond_role_regular"),
+          connection_url: connection_url("james-bond_role_regular"),
           schema: test_schema,
-          user: "jamesbond_role_regular",
+          user: "james-bond_role_regular",
         )
       conn1[:items].insert(name: "Foo1")
       expect(conn1[:items].first[:name]).to eq("Foo1")
@@ -495,14 +495,14 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       # Expect no item in target DB
       conn2 =
         PgEasyReplicate::Query.connect(
-          connection_url: target_connection_url("jamesbond_role_regular"),
+          connection_url: target_connection_url("james-bond_role_regular"),
           schema: test_schema,
-          user: "jamesbond_role_regular",
+          user: "james-bond_role_regular",
         )
       expect(conn2[:items].first).to be_nil
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url(
-        "jamesbond_super_role",
+        "james-bond_super_role",
       )
 
       expect do
@@ -544,8 +544,8 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       # described_class.switchover(
       #   group_name: "cluster1",
-      #   source_conn_string: connection_url("jamesbond_role_regular"),
-      #   target_conn_string: target_connection_url("jamesbond_role_regular"),
+      #   source_conn_string: connection_url("james-bond_role_regular"),
+      #   target_conn_string: target_connection_url("james-bond_role_regular"),
       # )
 
       # expect(PgEasyReplicate::Group.find("cluster1")).to include(

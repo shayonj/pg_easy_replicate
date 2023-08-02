@@ -3,12 +3,12 @@
 set -eo pipefail
 
 if [[ -z ${GITHUB_WORKFLOW} ]]; then
-  export SECONDARY_SOURCE_DB_URL="postgres://jamesbond:jamesbond123%407%21%273aaR@source_db/postgres"
+  export SECONDARY_SOURCE_DB_URL="postgres://james-bond:james-bond123%407%21%273aaR@source_db/postgres"
 fi
 
-export SOURCE_DB_URL="postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5432/postgres"
-export TARGET_DB_URL="postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5433/postgres"
-export PGPASSWORD='jamesbond123@7!'"'"''"'"'3aaR'
+export SOURCE_DB_URL="postgres://james-bond:james-bond123%407%21%273aaR@localhost:5432/postgres"
+export TARGET_DB_URL="postgres://james-bond:james-bond123%407%21%273aaR@localhost:5433/postgres"
+export PGPASSWORD='james-bond123@7!'"'"''"'"'3aaR'
 
 # Bootstrap and cleanup
 echo "===== Performing Bootstrap and cleanup"

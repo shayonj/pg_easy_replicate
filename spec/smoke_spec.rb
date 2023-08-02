@@ -10,7 +10,7 @@ RSpec.describe("SmokeSpec") do
         PgEasyReplicate::Query.run(
           query: "select count(*) from pgbench_accounts",
           connection_url: connection_url,
-          user: "jamesbond",
+          user: "james-bond",
         )
       expect(r).to eq([{ count: 500_000 }])
       last_count = r.last[:count]
@@ -26,7 +26,7 @@ RSpec.describe("SmokeSpec") do
             PgEasyReplicate::Query.run(
               query: sql,
               connection_url: connection_url,
-              user: "jamesbond",
+              user: "james-bond",
             )
           rescue => e
             if e.message.include?(
@@ -35,7 +35,7 @@ RSpec.describe("SmokeSpec") do
               PgEasyReplicate::Query.run(
                 query: sql,
                 connection_url: target_connection_url,
-                user: "jamesbond",
+                user: "james-bond",
               )
             else
               raise
@@ -56,7 +56,7 @@ RSpec.describe("SmokeSpec") do
         PgEasyReplicate::Query.run(
           query: "select count(*) from pgbench_accounts",
           connection_url: target_connection_url,
-          user: "jamesbond",
+          user: "james-bond",
         )
       expect(r).to eq([{ count: 503_000 }])
       expect(

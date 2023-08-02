@@ -33,7 +33,7 @@ RSpec.describe(PgEasyReplicate::Group) do
           query: columns_sql,
           connection_url: connection_url,
           schema: PgEasyReplicate.internal_schema_name,
-          user: "jamesbond",
+          user: "james-bond",
         )
       expect(columns).to eq(
         [
