@@ -122,7 +122,7 @@ RSpec.describe(PgEasyReplicate) do
         expect(
           described_class.send(
             :is_super_user?,
-            connection_url("jamesbond_sup"),
+            connection_url("james-bond_sup"),
           ),
         ).to be(true)
       end
@@ -137,8 +137,8 @@ RSpec.describe(PgEasyReplicate) do
         expect(
           described_class.send(
             :is_super_user?,
-            connection_url("jamesbond_role_regular"),
-            "jamesbond_super_role",
+            connection_url("james-bond_role_regular"),
+            "james-bond_super_role",
           ),
         ).to be(true)
       end
@@ -168,7 +168,7 @@ RSpec.describe(PgEasyReplicate) do
     end
 
     describe ".bootstrap" do
-      before { setup_tables("jamesbond", setup_target_db: false) }
+      before { setup_tables("james-bond", setup_target_db: false) }
 
       after do
         described_class.cleanup({ everything: true, group_name: "cluster1" })
@@ -267,7 +267,7 @@ RSpec.describe(PgEasyReplicate) do
           PgEasyReplicate::Query.connect(
             connection_url: target_connection_url,
             schema: test_schema,
-            user: "jamesbond",
+            user: "james-bond",
           )
         expect(conn.fetch("SELECT * FROM items").to_a).to eq([])
       end
@@ -333,7 +333,7 @@ RSpec.describe(PgEasyReplicate) do
     end
 
     describe ".import_schema" do
-      before { setup_tables("jamesbond", setup_target_db: false) }
+      before { setup_tables("james-bond", setup_target_db: false) }
 
       after do
         teardown_tables
@@ -348,7 +348,7 @@ RSpec.describe(PgEasyReplicate) do
           PgEasyReplicate::Query.connect(
             connection_url: target_connection_url,
             schema: test_schema,
-            user: "jamesbond",
+            user: "james-bond",
           )
         expect(conn.fetch("SELECT * FROM items").to_a).to eq([])
       end

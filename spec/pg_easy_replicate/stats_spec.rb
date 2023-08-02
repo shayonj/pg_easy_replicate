@@ -41,7 +41,7 @@ RSpec.describe(PgEasyReplicate::Stats) do
         replay_lag: kind_of(BigDecimal),
         state: kind_of(String),
         sync_state: kind_of(String),
-        user_name: "jamesbond",
+        user_name: "james-bond",
         write_lag: kind_of(BigDecimal),
       )
     end

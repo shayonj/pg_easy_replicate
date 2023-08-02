@@ -6,25 +6,25 @@ module DatabaseHelpers
   end
 
   # We are use url encoded password below.
-  # Original password is jamesbond123@7!'3aaR
-  def connection_url(user = "jamesbond")
-    "postgres://#{user}:jamesbond123%407%21%273aaR@localhost:5432/postgres"
+  # Original password is james-bond123@7!'3aaR
+  def connection_url(user = "james-bond")
+    "postgres://#{user}:james-bond123%407%21%273aaR@localhost:5432/postgres"
   end
 
-  def target_connection_url(user = "jamesbond")
-    "postgres://#{user}:jamesbond123%407%21%273aaR@localhost:5433/postgres"
+  def target_connection_url(user = "james-bond")
+    "postgres://#{user}:james-bond123%407%21%273aaR@localhost:5433/postgres"
   end
 
-  def docker_compose_target_connection_url(user = "jamesbond")
-    "postgres://#{user}:jamesbond123%407%21%273aaR@target_db/postgres"
+  def docker_compose_target_connection_url(user = "james-bond")
+    "postgres://#{user}:james-bond123%407%21%273aaR@target_db/postgres"
   end
 
-  def docker_compose_source_connection_url(user = "jamesbond")
+  def docker_compose_source_connection_url(user = "james-bond")
     return connection_url(user) if ENV["GITHUB_WORKFLOW"] # if running in CI/github actions
-    "postgres://#{user}:jamesbond123%407%21%273aaR@source_db/postgres"
+    "postgres://#{user}:james-bond123%407%21%273aaR@source_db/postgres"
   end
 
-  def setup_tables(user = "jamesbond", setup_target_db: true)
+  def setup_tables(user = "james-bond", setup_target_db: true)
     setup(connection_url(user), user)
     setup(target_connection_url(user), user) if setup_target_db
   end
@@ -33,78 +33,78 @@ module DatabaseHelpers
     [connection_url, target_connection_url].each do |url|
       PgEasyReplicate::Query.run(
         query:
-          "drop role if exists jamesbond_sup; create user jamesbond_sup with login superuser password 'jamesbond123@7!''3aaR';",
+          "drop role if exists #{PG::Connection.quote_ident("james-bond_sup")}; create user #{PG::Connection.quote_ident("james-bond_sup")} with login superuser password 'james-bond123@7!''3aaR';",
         connection_url: url,
-        user: "jamesbond",
+        user: "james-bond",
       )
 
       PgEasyReplicate::Query.run(
         query:
-          "drop role if exists no_sup; create user no_sup with login password 'jamesbond123@7!''3aaR';",
+          "drop role if exists no_sup; create user no_sup with login password 'james-bond123@7!''3aaR';",
         connection_url: url,
-        user: "jamesbond",
+        user: "james-bond",
       )
 
       # setup role
       PgEasyReplicate::Query.run(
         query:
-          "drop role if exists jamesbond_super_role; create role jamesbond_super_role with createdb createrole replication;",
+          "drop role if exists #{PG::Connection.quote_ident("james-bond_super_role")}; create role #{PG::Connection.quote_ident("james-bond_super_role")} with createdb createrole replication;",
         connection_url: url,
-        user: "jamesbond",
+        user: "james-bond",
       )
 
       # setup user with role
       sql = <<~SQL
-        drop role if exists jamesbond_role_regular;
-        create role jamesbond_role_regular WITH createrole createdb replication LOGIN PASSWORD 'jamesbond123@7!''3aaR'; grant jamesbond_super_role to jamesbond_role_regular;
-        grant all privileges on database postgres TO jamesbond_role_regular;
+        drop role if exists #{PG::Connection.quote_ident("james-bond_role_regular")};
+        create role #{PG::Connection.quote_ident("james-bond_role_regular")} WITH createrole createdb replication LOGIN PASSWORD 'james-bond123@7!''3aaR'; grant #{PG::Connection.quote_ident("james-bond_super_role")} to #{PG::Connection.quote_ident("james-bond_role_regular")};
+        grant all privileges on database postgres TO #{PG::Connection.quote_ident("james-bond_role_regular")};
       SQL
       PgEasyReplicate::Query.run(
         query: sql,
         connection_url: url,
-        user: "jamesbond",
+        user: "james-bond",
       )
     end
   end
 
   def cleanup_roles
     %w[
-      jamesbond_sup
+      james-bond_sup
       no_sup
-      jamesbond_role_regular
-      jamesbond_super_role
+      james-bond_role_regular
+      james-bond_super_role
     ].each do |role|
-      if role == "jamesbond_role_regular"
+      if role == "james-bond_role_regular"
         PgEasyReplicate::Query.run(
           query:
-            "revoke all privileges on database postgres from jamesbond_role_regular;",
+            "revoke all privileges on database postgres from #{PG::Connection.quote_ident("james-bond_role_regular")};",
           connection_url: connection_url,
-          user: "jamesbond",
+          user: "james-bond",
         )
 
         PgEasyReplicate::Query.run(
           query:
-            "revoke all privileges on database postgres from jamesbond_role_regular;",
+            "revoke all privileges on database postgres from #{PG::Connection.quote_ident("james-bond_role_regular")};",
           connection_url: target_connection_url,
-          user: "jamesbond",
+          user: "james-bond",
         )
       end
 
       PgEasyReplicate::Query.run(
-        query: "drop role if exists #{role};",
+        query: "drop role if exists #{PG::Connection.quote_ident(role)};",
         connection_url: connection_url,
-        user: "jamesbond",
+        user: "james-bond",
       )
 
       PgEasyReplicate::Query.run(
-        query: "drop role if exists #{role};",
+        query: "drop role if exists #{PG::Connection.quote_ident(role)};",
         connection_url: target_connection_url,
-        user: "jamesbond",
+        user: "james-bond",
       )
     end
   end
 
-  def setup(connection_url, user = "jamesbond")
+  def setup(connection_url, user = "james-bond")
     PgEasyReplicate::Query.run(
       query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
       connection_url: connection_url,
@@ -138,13 +138,13 @@ module DatabaseHelpers
     PgEasyReplicate::Query.run(
       query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
       connection_url: connection_url,
-      user: "jamesbond",
+      user: "james-bond",
     )
 
     PgEasyReplicate::Query.run(
       query: "DROP SCHEMA IF EXISTS #{test_schema} CASCADE;",
       connection_url: target_connection_url,
-      user: "jamesbond",
+      user: "james-bond",
     )
   end
 
@@ -154,7 +154,7 @@ module DatabaseHelpers
         "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '#{PgEasyReplicate.internal_schema_name}';",
       connection_url: connection_url,
       schema: PgEasyReplicate.internal_schema_name,
-      user: "jamesbond",
+      user: "james-bond",
     )
   end
 
@@ -164,7 +164,7 @@ module DatabaseHelpers
         "SELECT table_name FROM information_schema.tables WHERE  table_name = 'groups'",
       connection_url: connection_url,
       schema: PgEasyReplicate.internal_schema_name,
-      user: "jamesbond",
+      user: "james-bond",
     )
   end
 
@@ -173,7 +173,7 @@ module DatabaseHelpers
       query:
         "select rolcreatedb, rolcreaterole, rolcanlogin, rolsuper from pg_authid where rolname = 'pger_su_h1a4fb';",
       connection_url: connection_url,
-      user: "jamesbond",
+      user: "james-bond",
     )
   end
 
@@ -182,7 +182,7 @@ module DatabaseHelpers
       query:
         "select subname, subpublications, subslotname, subenabled from pg_subscription;",
       connection_url: connection_url,
-      user: "jamesbond",
+      user: "james-bond",
     )
   end
 
@@ -190,7 +190,7 @@ module DatabaseHelpers
     PgEasyReplicate::Query.run(
       query: "select * from pg_publication_tables;",
       connection_url: connection_url,
-      user: "jamesbond",
+      user: "james-bond",
     )
   end
 
@@ -198,7 +198,7 @@ module DatabaseHelpers
     PgEasyReplicate::Query.run(
       query: "select pubname from pg_catalog.pg_publication",
       connection_url: connection_url,
-      user: "jamesbond",
+      user: "james-bond",
     )
   end
 
@@ -214,9 +214,9 @@ module DatabaseHelpers
   def self.populate_env_vars
     ENV[
       "SOURCE_DB_URL"
-    ] = "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5432/postgres"
+    ] = "postgres://james-bond:james-bond123%407%21%273aaR@localhost:5432/postgres"
     ENV[
       "TARGET_DB_URL"
-    ] = "postgres://jamesbond:jamesbond123%407%21%273aaR@localhost:5433/postgres"
+    ] = "postgres://james-bond:james-bond123%407%21%273aaR@localhost:5433/postgres"
   end
 end

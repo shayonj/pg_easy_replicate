@@ -9,7 +9,7 @@ RSpec.describe(PgEasyReplicate::Query) do
         described_class.run(
           query: "SELECT 'FooBar' as result",
           connection_url: connection_url,
-          user: "jamesbond",
+          user: "james-bond",
         )
 
       expect(result).to eq([{ result: "FooBar" }])
@@ -20,7 +20,7 @@ RSpec.describe(PgEasyReplicate::Query) do
         described_class.run(
           query: "show statement_timeout",
           connection_url: connection_url,
-          user: "jamesbond",
+          user: "james-bond",
         )
 
       expect(result).to eq([{ statement_timeout: "5s" }])
@@ -37,7 +37,7 @@ RSpec.describe(PgEasyReplicate::Query) do
           query: query,
           connection_url: connection_url,
           schema: "pger_test",
-          user: "jamesbond",
+          user: "james-bond",
         )
       }.to raise_error(PG::DependentObjectsStillExist)
     end
@@ -48,7 +48,7 @@ RSpec.describe(PgEasyReplicate::Query) do
           query: "select * from sellers;",
           connection_url: connection_url,
           schema: "pger_test",
-          user: "jamesbond",
+          user: "james-bond",
         ).to_a,
       ).to eq([])
     end
