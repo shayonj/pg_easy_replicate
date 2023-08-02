@@ -70,10 +70,10 @@ jobs:
           export PGPASSWORD='james-bond123@7!'"'"''"'"'3aaR'
 
           sudo su - postgres -c "createuser -p 5432 -d -s -e -l james-bond"
-          sudo -u postgres psql -p 5432 -c 'alter user james-bond with encrypted password '"'"''"$PGPASSWORD"''"'"';'
+          sudo -u postgres psql -p 5432 -c 'alter user "james-bond" with encrypted password '"'"''"$PGPASSWORD"''"'"';'
 
           sudo su - postgres -c "createuser -p 5433 -d -s -e -l james-bond"
-          sudo -u postgres psql -p 5433 -c 'alter user james-bond with encrypted password '"'"''"$PGPASSWORD"''"'"';'
+          sudo -u postgres psql -p 5433 -c 'alter user "james-bond" with encrypted password '"'"''"$PGPASSWORD"''"'"';'
 
           # Remove the escaped quote since we are passing the pwd to psql
           # String: james-bond123@7!'3aaR
