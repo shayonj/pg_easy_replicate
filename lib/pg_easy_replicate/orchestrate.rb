@@ -94,8 +94,8 @@ module PgEasyReplicate
           .map do |table_name|
             Query.run(
               query:
-                "ALTER PUBLICATION #{quote_identifier(publication_name(group_name))}
-                        ADD TABLE #{quote_identifier(table_name)}",
+                "ALTER PUBLICATION #{quote_ident(publication_name(group_name))}
+                        ADD TABLE #{quote_ident(table_name)}",
               connection_url: conn_string,
               schema: schema,
             )
@@ -126,7 +126,8 @@ module PgEasyReplicate
           { publication_name: publication_name(group_name) },
         )
         Query.run(
-          query: "DROP PUBLICATION IF EXISTS #{quote_identifier(publication_name(group_name))}",
+          query:
+            "DROP PUBLICATION IF EXISTS #{quote_ident(publication_name(group_name))}",
           connection_url: conn_string,
           user: db_user(conn_string),
         )
@@ -149,9 +150,9 @@ module PgEasyReplicate
 
         Query.run(
           query:
-            "CREATE SUBSCRIPTION #{quote_identifier(subscription_name(group_name))}
+            "CREATE SUBSCRIPTION #{quote_ident(subscription_name(group_name))}
                       CONNECTION '#{source_conn_string}'
-                      PUBLICATION #{quote_identifier(publication_name(group_name))}",
+                      PUBLICATION #{quote_ident(publication_name(group_name))}",
           connection_url: target_conn_string,
           user: db_user(target_conn_string),
           transaction: false,
@@ -289,7 +290,7 @@ module PgEasyReplicate
         )
 
         alter_sql =
-          "ALTER USER #{db_user(source_db_url)} set default_transaction_read_only = true"
+          "ALTER USER #{quote_ident(db_user(source_db_url))} set default_transaction_read_only = true"
         Query.run(query: alter_sql, connection_url: source_db_url)
 
         kill_sql =
@@ -304,7 +305,7 @@ module PgEasyReplicate
         logger.info("Restoring connections")
 
         alter_sql =
-          "ALTER USER #{db_user(source_db_url)} set default_transaction_read_only = false"
+          "ALTER USER #{quote_ident(db_user(source_db_url))} set default_transaction_read_only = false"
         Query.run(query: alter_sql, connection_url: source_db_url)
       end
 
