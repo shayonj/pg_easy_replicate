@@ -5,6 +5,7 @@ require "ougai"
 require "pg"
 require "sequel"
 require "open3"
+require "English"
 
 require "pg_easy_replicate/helper"
 require "pg_easy_replicate/version"
