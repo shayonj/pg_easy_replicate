@@ -28,6 +28,7 @@ jobs:
             { from: 13, to: 14 },
             { from: 14, to: 15 },
             { from: 10, to: 15 },
+            { from: 12, to: 15 },
           ]
     steps:
       - uses: actions/checkout@v1
