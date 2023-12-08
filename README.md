@@ -4,7 +4,7 @@
 [![Smoke spec](https://github.com/shayonj/pg_easy_replicate/actions/workflows/smoke.yaml/badge.svg?branch=main)](https://github.com/shayonj/pg_easy_replicate/actions/workflows/ci.yaml)
 [![Gem Version](https://badge.fury.io/rb/pg_easy_replicate.svg?2)](https://badge.fury.io/rb/pg_easy_replicate)
 
-`pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up [logical replication](https://www.postgresql.org/docs/current/logical-replication.html) between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database) is fully replicating, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for performing minimal downtime (up to <1min, depending) major version upgrades between two PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
+`pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up [logical replication](https://www.postgresql.org/docs/current/logical-replication.html) between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database) is fully replicated, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for performing minimal downtime (up to <1min, depending) major version upgrades between two PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
 
 Battle tested in production at [Tines](https://www.tines.com/) 🚀
 
@@ -58,7 +58,7 @@ https://hub.docker.com/r/shayonj/pg_easy_replicate
 
 - PostgreSQL 10 and later
 - Ruby 2.7 and later
-- Database user should have permissions for `SUPERUSER` or pass in the special user role that has the privileges to create role, schema, publication and subscription on both databases. More on `--special-user-role` section below.
+- Database users should have `SUPERUSER` permissions, or pass in a special user with privileges to create the needed role, schema, publication and subscription on both databases. More on `--special-user-role` section below.
 
 ## Limits
 
@@ -160,7 +160,7 @@ $ pg_easy_replicate start_sync --group-name database-cluster-1
 
 ### Stats
 
-You can inspect or watch stats any time during the sync process. The stats give you can an idea of when the sync started, current flush/write lag, how many tables are in `replicating`, `copying` or other stages, and more.
+You can inspect or watch stats any time during the sync process. The stats give you an idea of when the sync started, current flush/write lag, how many tables are in `replicating`, `copying` or other stages, and more.
 
 You can poll these stats to perform any other after the switchover is done. The stats include a `switchover_completed_at` which is updated once the switch over is complete.
 
@@ -203,7 +203,7 @@ $ pg_easy_replicate stats --group-name database-cluster-1
 
 `switchover` will wait until all tables in the group are replicating and the delta for lag is <200kb (by calculating the `pg_wal_lsn_diff` between `sent_lsn` and `write_lsn`) and then perform the switch.
 
-The switch is made by putting the user on the source database in `READ ONLY` mode, so that it is not accepting any more writes and waits for the flush lag to be `0`. It is up to user to kick of a rolling restart of your application containers or failover DNS (more on these below in strategies) after the switchover is complete, so that your application isn't sending any read/write requests to the old/source database.
+The switch is made by putting the user on the source database in `READ ONLY` mode, so that it is not accepting any more writes and waits for the flush lag to be `0`. It’s up to the user to kick off a rolling restart of your application containers or failover DNS (more on these below in strategies) after the switchover is complete, so that your application isn't sending any read/write requests to the old/source database.
 
 ```bash
 $ pg_easy_replicate switchover  --group-name database-cluster-1
@@ -252,7 +252,7 @@ Next, you can set up a program that watches the `stats` and waits until `switcho
 
 ### Adding internal user to pgBouncer `userlist`
 
-`pg_easy_replicate` creates a special user to orchestrate the replication. If you us pgBouncer, you may need to allow `pger_su_h1a4fb` as a user that can perform login by adding it to the `userlist`.
+`pg_easy_replicate` creates a special user to orchestrate the replication. If you use pgBouncer, you may need to allow `pger_su_h1a4fb` as a user that can perform login by adding it to the `userlist`.
 
 ## Contributing
 
