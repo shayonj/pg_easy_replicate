@@ -1,3 +1,7 @@
+## [0.1.10] - 2023-12-12
+
+- Reference the passed in URL and use source db url - #74
+
 ## [0.1.9] - 2023-08-01
 
 - Exclude views, temporary tables and foreign tables from #list_all_tables - #39
