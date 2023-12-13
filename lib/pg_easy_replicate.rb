@@ -100,7 +100,6 @@ module PgEasyReplicate
       logger.info("Setting up replication user on source database")
       create_user(
         conn_string: source_db_url,
-        group_name: options[:group_name],
         special_user_role: options[:special_user_role],
         grant_permissions_on_schema: true,
       )
@@ -108,7 +107,6 @@ module PgEasyReplicate
       logger.info("Setting up replication user on target database")
       create_user(
         conn_string: target_db_url,
-        group_name: options[:group_name],
         special_user_role: options[:special_user_role],
       )
 
@@ -157,7 +155,7 @@ module PgEasyReplicate
           "DROP SCHEMA IF EXISTS #{quote_ident(internal_schema_name)} CASCADE",
         connection_url: source_db_url,
         schema: internal_schema_name,
-        user: db_user(target_db_url),
+        user: db_user(source_db_url),
       )
     rescue => e
       raise "Unable to drop schema: #{e.message}"
@@ -174,7 +172,7 @@ module PgEasyReplicate
         query: sql,
         connection_url: source_db_url,
         schema: internal_schema_name,
-        user: db_user(target_db_url),
+        user: db_user(source_db_url),
       )
     rescue => e
       raise "Unable to setup schema: #{e.message}"
@@ -243,12 +241,7 @@ module PgEasyReplicate
           ORDER BY 1;
         SQL
 
-        r =
-          Query.run(
-            query: sql,
-            connection_url: url,
-            user: db_user(target_db_url),
-          )
+        r = Query.run(query: sql, connection_url: url, user: db_user(url))
         # If special_user_role is passed just ensure the url in conn_string has been granted
         # the special_user_role
         r.any? { |q| q[:role] == special_user_role }
@@ -258,7 +251,7 @@ module PgEasyReplicate
             query:
               "SELECT rolname, rolsuper FROM pg_roles where rolname = '#{db_user(url)}';",
             connection_url: url,
-            user: db_user(target_db_url),
+            user: db_user(url),
           )
         r.any? { |q| q[:rolsuper] }
       end
@@ -268,7 +261,6 @@ module PgEasyReplicate
 
     def create_user(
       conn_string:,
-      group_name:,
       special_user_role: nil,
       grant_permissions_on_schema: false
     )
