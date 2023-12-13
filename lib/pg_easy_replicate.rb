@@ -140,10 +140,10 @@ module PgEasyReplicate
       if options[:everything]
         # Drop users at last
         logger.info("Dropping replication user on source database")
-        drop_user(conn_string: source_db_url, group_name: options[:group_name])
+        drop_user(conn_string: source_db_url)
 
         logger.info("Dropping replication user on target database")
-        drop_user(conn_string: target_db_url, group_name: options[:group_name])
+        drop_user(conn_string: target_db_url)
       end
     rescue => e
       abort_with("Unable to cleanup: #{e.message}")
@@ -266,8 +266,9 @@ module PgEasyReplicate
     )
       password = connection_info(conn_string)[:password].gsub("'") { "''" }
 
+      drop_user(conn_string: conn_string)
+
       sql = <<~SQL
-        drop role if exists #{quote_ident(internal_user_name)};
         create role #{quote_ident(internal_user_name)} with password '#{password}' login createdb createrole;
         grant all privileges on database #{quote_ident(db_name(conn_string))} TO #{quote_ident(internal_user_name)};
       SQL
@@ -305,10 +306,13 @@ module PgEasyReplicate
       raise "Unable to create user: #{e.message}"
     end
 
-    def drop_user(conn_string:, group_name:)
+    def drop_user(conn_string:, user: internal_user_name)
+      return unless user_exists?(conn_string: conn_string, user: user)
+
       sql = <<~SQL
-       revoke all privileges on database #{db_name(conn_string)} from #{quote_ident(internal_user_name)};
+       revoke all privileges on database #{db_name(conn_string)} from #{quote_ident(user)};
       SQL
+
       Query.run(
         query: sql,
         connection_url: conn_string,
@@ -316,7 +320,7 @@ module PgEasyReplicate
       )
 
       sql = <<~SQL
-        drop role if exists #{quote_ident(internal_user_name)};
+        drop role if exists #{quote_ident(user)};
       SQL
 
       Query.run(
@@ -326,6 +330,26 @@ module PgEasyReplicate
       )
     rescue => e
       raise "Unable to drop user: #{e.message}"
+    end
+
+    def user_exists?(conn_string:, user: internal_user_name)
+      sql = <<~SQL
+        SELECT r.rolname AS username,
+          r1.rolname AS "role"
+        FROM pg_catalog.pg_roles r
+        LEFT JOIN pg_catalog.pg_auth_members m ON (m.member = r.oid)
+        LEFT JOIN pg_roles r1 ON (m.roleid=r1.oid)
+        WHERE r.rolname = '#{user}'
+        ORDER BY 1;
+      SQL
+
+      Query
+        .run(
+          query: sql,
+          connection_url: conn_string,
+          user: db_user(conn_string),
+        )
+        .any? { |q| q[:username] == user }
     end
   end
 end
