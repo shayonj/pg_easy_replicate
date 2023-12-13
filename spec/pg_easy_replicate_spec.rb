@@ -167,6 +167,22 @@ RSpec.describe(PgEasyReplicate) do
       end
     end
 
+    describe ".drop_user" do
+      it "drops the user" do
+        described_class.create_user(conn_string: connection_url)
+
+        expect(described_class.user_exists?(conn_string: connection_url)).to be(
+          true,
+        )
+
+        described_class.drop_user(conn_string: connection_url)
+
+        expect(described_class.user_exists?(conn_string: connection_url)).to be(
+          false,
+        )
+      end
+    end
+
     describe ".bootstrap" do
       before { setup_tables("james-bond", setup_target_db: false) }
 
