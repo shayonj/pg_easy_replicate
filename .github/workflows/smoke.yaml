@@ -72,22 +72,26 @@ jobs:
 
           sudo su - postgres -c "createuser -p 5432 -d -s -e -l james-bond"
           sudo -u postgres psql -p 5432 -c 'alter user "james-bond" with encrypted password '"'"''"$PGPASSWORD"''"'"';'
+          sudo su - postgres -c "createdb -p 5432 postgres-db"
+          sudo -u postgres psql -p 5432 -c "grant all privileges on database \"postgres-db\" to \"james-bond\";"
 
           sudo su - postgres -c "createuser -p 5433 -d -s -e -l james-bond"
           sudo -u postgres psql -p 5433 -c 'alter user "james-bond" with encrypted password '"'"''"$PGPASSWORD"''"'"';'
+          sudo su - postgres -c "createdb -p 5433 postgres-db"
+          sudo -u postgres psql -p 5433 -c "grant all privileges on database \"postgres-db\" to \"james-bond\";"
 
           # Remove the escaped quote since we are passing the pwd to psql
           # String: james-bond123@7!'3aaR
           export PGPASSWORD='james-bond123@7!'"'"'3aaR'
-          psql -h localhost -d postgres -U james-bond -p 5432 -c 'ALTER SYSTEM SET wal_level = logical;'
-          psql -h localhost -d postgres -U james-bond -p 5433 -c 'ALTER SYSTEM SET wal_level = logical;'
+          psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'ALTER SYSTEM SET wal_level = logical;'
+          psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'ALTER SYSTEM SET wal_level = logical;'
 
           sudo systemctl restart postgresql@${{ matrix.pg.from }}-main.service
           sudo systemctl restart postgresql@${{ matrix.pg.to }}-main.service
           sudo systemctl restart postgresql
 
-          psql -h localhost -d postgres -U james-bond -p 5432 -c 'show wal_level;'
-          psql -h localhost -d postgres -U james-bond -p 5433 -c 'show wal_level;'
+          psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'show wal_level;'
+          psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'show wal_level;'
 
       - name: Run RSpec
         run: bundle exec rspec spec/smoke_spec.rb

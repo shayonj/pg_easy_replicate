@@ -8,20 +8,20 @@ module DatabaseHelpers
   # We are use url encoded password below.
   # Original password is james-bond123@7!'3aaR
   def connection_url(user = "james-bond")
-    "postgres://#{user}:james-bond123%407%21%273aaR@localhost:5432/postgres"
+    "postgres://#{user}:james-bond123%407%21%273aaR@localhost:5432/postgres-db"
   end
 
   def target_connection_url(user = "james-bond")
-    "postgres://#{user}:james-bond123%407%21%273aaR@localhost:5433/postgres"
+    "postgres://#{user}:james-bond123%407%21%273aaR@localhost:5433/postgres-db"
   end
 
   def docker_compose_target_connection_url(user = "james-bond")
-    "postgres://#{user}:james-bond123%407%21%273aaR@target_db/postgres"
+    "postgres://#{user}:james-bond123%407%21%273aaR@target_db/postgres-db"
   end
 
   def docker_compose_source_connection_url(user = "james-bond")
     return connection_url(user) if ENV["GITHUB_WORKFLOW"] # if running in CI/github actions
-    "postgres://#{user}:james-bond123%407%21%273aaR@source_db/postgres"
+    "postgres://#{user}:james-bond123%407%21%273aaR@source_db/postgres-db"
   end
 
   def setup_tables(user = "james-bond", setup_target_db: true)
@@ -57,7 +57,7 @@ module DatabaseHelpers
       sql = <<~SQL
         drop role if exists #{PG::Connection.quote_ident("james-bond_role_regular")};
         create role #{PG::Connection.quote_ident("james-bond_role_regular")} WITH createrole createdb replication LOGIN PASSWORD 'james-bond123@7!''3aaR'; grant #{PG::Connection.quote_ident("james-bond_super_role")} to #{PG::Connection.quote_ident("james-bond_role_regular")};
-        grant all privileges on database postgres TO #{PG::Connection.quote_ident("james-bond_role_regular")};
+        grant all privileges on database #{PG::Connection.quote_ident("postgres-db")} TO #{PG::Connection.quote_ident("james-bond_role_regular")};
       SQL
       PgEasyReplicate::Query.run(
         query: sql,
@@ -77,14 +77,14 @@ module DatabaseHelpers
       if role == "james-bond_role_regular"
         PgEasyReplicate::Query.run(
           query:
-            "revoke all privileges on database postgres from #{PG::Connection.quote_ident("james-bond_role_regular")};",
+            "revoke all privileges on database #{PG::Connection.quote_ident("postgres-db")} from #{PG::Connection.quote_ident("james-bond_role_regular")};",
           connection_url: connection_url,
           user: "james-bond",
         )
 
         PgEasyReplicate::Query.run(
           query:
-            "revoke all privileges on database postgres from #{PG::Connection.quote_ident("james-bond_role_regular")};",
+            "revoke all privileges on database #{PG::Connection.quote_ident("postgres-db")} from #{PG::Connection.quote_ident("james-bond_role_regular")};",
           connection_url: target_connection_url,
           user: "james-bond",
         )
@@ -214,9 +214,9 @@ module DatabaseHelpers
   def self.populate_env_vars
     ENV[
       "SOURCE_DB_URL"
-    ] = "postgres://james-bond:james-bond123%407%21%273aaR@localhost:5432/postgres"
+    ] = "postgres://james-bond:james-bond123%407%21%273aaR@localhost:5432/postgres-db"
     ENV[
       "TARGET_DB_URL"
-    ] = "postgres://james-bond:james-bond123%407%21%273aaR@localhost:5433/postgres"
+    ] = "postgres://james-bond:james-bond123%407%21%273aaR@localhost:5433/postgres-db"
   end
 end

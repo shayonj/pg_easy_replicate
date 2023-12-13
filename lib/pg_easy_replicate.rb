@@ -310,7 +310,7 @@ module PgEasyReplicate
       return unless user_exists?(conn_string: conn_string, user: user)
 
       sql = <<~SQL
-       revoke all privileges on database #{db_name(conn_string)} from #{quote_ident(user)};
+       revoke all privileges on database #{quote_ident(db_name(conn_string))} from #{quote_ident(user)};
       SQL
 
       Query.run(
