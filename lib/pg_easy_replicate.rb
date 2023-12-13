@@ -100,7 +100,6 @@ module PgEasyReplicate
       logger.info("Setting up replication user on source database")
       create_user(
         conn_string: source_db_url,
-        group_name: options[:group_name],
         special_user_role: options[:special_user_role],
         grant_permissions_on_schema: true,
       )
@@ -108,7 +107,6 @@ module PgEasyReplicate
       logger.info("Setting up replication user on target database")
       create_user(
         conn_string: target_db_url,
-        group_name: options[:group_name],
         special_user_role: options[:special_user_role],
       )
 
@@ -263,7 +261,6 @@ module PgEasyReplicate
 
     def create_user(
       conn_string:,
-      group_name:,
       special_user_role: nil,
       grant_permissions_on_schema: false
     )
