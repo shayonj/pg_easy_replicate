@@ -1,3 +1,12 @@
+## [0.1.12] - 2023-12-13
+
+- Bump rubocop-rspec from 2.24.1 to 2.25.0 - #65
+- Quote indent DB name - #76
+
+## [0.1.12] - 2023-12-13
+
+- Drop existing user with privileges when bootstrapping - #75
+
 ## [0.1.10] - 2023-12-12
 
 - Reference the passed in URL and use source db url - #74
