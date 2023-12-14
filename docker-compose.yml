@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: james-bond
       POSTGRES_PASSWORD: james-bond123@7!'3aaR
-      POSTGRES_DB: postgres
+      POSTGRES_DB: postgres-db
     command: >
       -c wal_level=logical
       -c ssl=on
@@ -23,7 +23,7 @@ services:
     environment:
       POSTGRES_USER: james-bond
       POSTGRES_PASSWORD: james-bond123@7!'3aaR
-      POSTGRES_DB: postgres
+      POSTGRES_DB: postgres-db
     command: >
       -c wal_level=logical
       -c ssl=on
