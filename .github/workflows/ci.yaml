@@ -19,7 +19,7 @@ jobs:
     name: Ruby ${{ matrix.ruby }} - PG ${{ matrix.pg.from }} -> PG ${{ matrix.pg.to }}
     strategy:
       matrix:
-        ruby: ["2.7.7", "3.0.5", "3.1.4", "3.2.1"]
+        ruby: ["3.0.5", "3.1.4", "3.2.1"]
         pg:
           [
             { from: 10, to: 11 },
