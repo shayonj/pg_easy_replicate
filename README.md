@@ -8,6 +8,8 @@
 
 Battle tested in production at [Tines](https://www.tines.com/) 🚀
 
+![](./assets/mascot.png)
+
 - [Installation](#installation)
 - [Requirements](#requirements)
 - [Limits](#limits)
