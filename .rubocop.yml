@@ -15,7 +15,7 @@ AllCops:
     - "**/.git/**/*"
     - "**/node_modules/**/*"
     - "**/Brewfile"
-  TargetRubyVersion: 2.7
+  TargetRubyVersion: 3.0
 
 Bundler/OrderedGems:
   Include:

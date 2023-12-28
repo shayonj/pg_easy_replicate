@@ -79,6 +79,12 @@ module PgEasyReplicate
                   aliases: "-t",
                   desc:
                     "Comma separated list of table names. Default: All tables"
+    method_option :recreate_indices_post_copy,
+                  type: :boolean,
+                  default: true,
+                  aliases: "-r",
+                  desc:
+                    "Drop all non-primary indices before copy and recreate them post-copy"
     def start_sync
       PgEasyReplicate::Orchestrate.start_sync(options)
     end
