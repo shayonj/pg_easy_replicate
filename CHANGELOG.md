@@ -1,3 +1,7 @@
+## [0.2.0] - 2023-12-29
+
+- Recreate indices post COPY, once all tables are in replicating mode - #81
+
 ## [0.1.12] - 2023-12-13
 
 - Bump rubocop-rspec from 2.24.1 to 2.25.0 - #65
