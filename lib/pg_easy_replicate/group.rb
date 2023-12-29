@@ -20,6 +20,7 @@ module PgEasyReplicate
           column(:updated_at, Time, default: Sequel::CURRENT_TIMESTAMP)
           column(:started_at, Time)
           column(:failed_at, Time)
+          column(:recreate_indices_post_copy, TrueClass, default: true)
           column(:switchover_completed_at, Time)
         end
       ensure

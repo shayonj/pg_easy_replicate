@@ -57,6 +57,7 @@ RSpec.describe(PgEasyReplicate::Group) do
             column_name: "failed_at",
             data_type: "timestamp without time zone",
           },
+          { column_name: "recreate_indices_post_copy", data_type: "boolean" },
           {
             column_name: "switchover_completed_at",
             data_type: "timestamp without time zone",

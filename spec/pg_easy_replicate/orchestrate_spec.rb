@@ -235,6 +235,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       described_class.start_sync(
         group_name: "cluster1",
         schema_name: test_schema,
+        recreate_indices_post_copy: true,
       )
 
       expect(pg_publications(connection_url: connection_url)).to eq(
@@ -262,6 +263,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         updated_at: kind_of(Time),
         failed_at: nil,
         table_names: "items,sellers",
+        recreate_indices_post_copy: true,
       )
     end
 
@@ -273,7 +275,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       expect do
         described_class.start_sync(
-          { group_name: "cluster1", schema_name: test_schema },
+          group_name: "cluster1",
+          schema_name: test_schema,
+          recreate_indices_post_copy: true,
         )
       end.to raise_error(RuntimeError, "Starting sync failed: boo")
 
@@ -302,7 +306,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       PgEasyReplicate::Orchestrate.start_sync(
-        { group_name: "cluster1", schema_name: test_schema },
+        group_name: "cluster1",
+        schema_name: test_schema,
+        recreate_indices_post_copy: true,
       )
     end
 
@@ -378,7 +384,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       described_class.start_sync(
-        { group_name: "cluster1", schema_name: test_schema },
+        group_name: "cluster1",
+        schema_name: test_schema,
+        recreate_indices_post_copy: true,
       )
 
       expect(PgEasyReplicate::Group.find("cluster1")).to include(
@@ -391,6 +399,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         updated_at: kind_of(Time),
         failed_at: nil,
         table_names: "items,sellers",
+        recreate_indices_post_copy: true,
       )
 
       conn1[:items].insert(name: "Foo2")
@@ -426,6 +435,25 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         updated_at: kind_of(Time),
         failed_at: nil,
         table_names: "items,sellers",
+      )
+
+      # Ensure index exists
+      result =
+        PgEasyReplicate::IndexManager.fetch_indices(
+          conn_string: target_connection_url,
+          tables: "sellers, items",
+          schema: test_schema,
+        )
+
+      expect(result).to eq(
+        [
+          {
+            index_definition:
+              "CREATE INDEX sellers_name_index ON pger_test.sellers USING btree (name)",
+            index_name: "sellers_name_index",
+            table_name: "sellers",
+          },
+        ],
       )
 
       # Expect sequence to be updated on target DB
@@ -507,7 +535,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       expect do
         described_class.start_sync(
-          { group_name: "cluster1", schema_name: test_schema },
+          group_name: "cluster1",
+          schema_name: test_schema,
+          recreate_indices_post_copy: true,
         )
       end.to raise_error(
         /Starting sync failed: Unable to create subscription: PG::InsufficientPrivilege: ERROR:  must be superuser to create subscriptions/,

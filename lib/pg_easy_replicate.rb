@@ -10,6 +10,7 @@ require "English"
 require "pg_easy_replicate/helper"
 require "pg_easy_replicate/version"
 require "pg_easy_replicate/query"
+require "pg_easy_replicate/index_manager"
 require "pg_easy_replicate/orchestrate"
 require "pg_easy_replicate/stats"
 require "pg_easy_replicate/group"
@@ -90,7 +91,7 @@ module PgEasyReplicate
       setup_internal_schema
 
       if options[:copy_schema]
-        logger.info("Setting up schema on targer database")
+        logger.info("Setting up schema on target database")
         copy_schema(
           source_conn_string: source_db_url,
           target_conn_string: target_db_url,

@@ -122,6 +122,7 @@ module DatabaseHelpers
       primary_key(:id)
       column(:name, String)
       column(:last_login, Time)
+      index(:name, unique: false)
     end
 
     return if conn.table_exists?("items")

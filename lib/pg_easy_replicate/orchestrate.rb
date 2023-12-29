@@ -17,6 +17,15 @@ module PgEasyReplicate
             list: options[:tables],
           )
 
+        if options[:recreate_indices_post_copy]
+          IndexManager.drop_indices(
+            source_conn_string: source_db_url,
+            target_conn_string: target_db_url,
+            tables: tables,
+            schema: schema_name,
+          )
+        end
+
         create_publication(
           group_name: options[:group_name],
           conn_string: source_db_url,
@@ -40,6 +49,7 @@ module PgEasyReplicate
           table_names: tables,
           schema_name: schema_name,
           started_at: Time.now.utc,
+          recreate_indices_post_copy: options[:recreate_indices_post_copy],
         )
       rescue => e
         stop_sync(
@@ -221,7 +231,22 @@ module PgEasyReplicate
           tables: group[:table_names],
           schema: group[:schema_name],
         )
+
         watch_lag(group_name: group_name, lag: lag_delta_size || DEFAULT_LAG)
+
+        if group[:recreate_indices_post_copy]
+          IndexManager.wait_for_replication_completion(group_name: group_name)
+          IndexManager.recreate_indices(
+            source_conn_string: source_db_url,
+            target_conn_string: target_db_url,
+            tables: group[:table_names],
+            schema: group[:schema_name],
+          )
+        end
+
+        # Watch for lag again, because it could've grown during index recreation
+        watch_lag(group_name: group_name, lag: lag_delta_size || DEFAULT_LAG)
+
         revoke_connections_on_source_db(group_name)
         wait_for_remaining_catchup(group_name)
         refresh_sequences(

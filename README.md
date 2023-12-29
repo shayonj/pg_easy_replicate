@@ -59,7 +59,7 @@ https://hub.docker.com/r/shayonj/pg_easy_replicate
 ## Requirements
 
 - PostgreSQL 10 and later
-- Ruby 2.7 and later
+- Ruby 3.0 and later
 - Database users should have `SUPERUSER` permissions, or pass in a special user with privileges to create the needed role, schema, publication and subscription on both databases. More on `--special-user-role` section below.
 
 ## Limits
@@ -153,6 +153,8 @@ $ pg_easy_replicate bootstrap --group-name database-cluster-1 --special-user-rol
 
 Once the bootstrap is complete, you can start the sync. Starting the sync sets up the publication, subscription and performs other minor housekeeping things.
 
+**NOTE**: Start sync by default will drop all indices in the target database for performance reasons. And will automatically re-add the indices during `switchover`. It is turned on by default and you can opt out of this with `--no-recreate-indices-post-copy`
+
 ```bash
 $ pg_easy_replicate start_sync --group-name database-cluster-1
 
@@ -205,7 +207,9 @@ $ pg_easy_replicate stats --group-name database-cluster-1
 
 `switchover` will wait until all tables in the group are replicating and the delta for lag is <200kb (by calculating the `pg_wal_lsn_diff` between `sent_lsn` and `write_lsn`) and then perform the switch.
 
-The switch is made by putting the user on the source database in `READ ONLY` mode, so that it is not accepting any more writes and waits for the flush lag to be `0`. It’s up to the user to kick off a rolling restart of your application containers or failover DNS (more on these below in strategies) after the switchover is complete, so that your application isn't sending any read/write requests to the old/source database.
+Additionally, `switchover` will take care of re-adding the indices (it had removed in `start_sync`) in the target database before hand. Depending on the size of the tables, the recreation of indexes (which happens `CONCURRENTLY`) may take a while. See `start_sync` for more details.
+
+The switch is made by putting the user on the source database in `READ ONLY` mode, so that it is not accepting any more writes and waits for the flush lag to be `0`. It’s up to the user to kick off a rolling restart of their application containers or failover DNS (more on these below in strategies) after the switchover is complete, so that your application isn't sending any read + write requests to the old/source database.
 
 ```bash
 $ pg_easy_replicate switchover  --group-name database-cluster-1
