@@ -84,6 +84,126 @@ module PgEasyReplicate
       Query.run(query: sql, connection_url: conn_string, schema: schema)
     end
 
+    def self.drop_constraints(
+      source_conn_string:,
+      target_conn_string:,
+      tables:,
+      schema:
+    )
+      logger.info("Dropping constraints from target database")
+
+      # Fetch constraints from the source database
+      constraints =
+        fetch_constraints(
+          conn_string: source_conn_string,
+          tables: tables,
+          schema: schema,
+        )
+
+      constraints.each do |constraint|
+        drop_constraint_sql =
+          "ALTER TABLE #{constraint[:table_name]} DROP CONSTRAINT IF EXISTS #{constraint[:constraint_name]};"
+        Query.run(
+          query: drop_constraint_sql,
+          connection_url: target_conn_string,
+          schema: schema,
+          transaction: false,
+        )
+      end
+    end
+
+    def self.fetch_constraints(conn_string:, tables:, schema:)
+      return [] if tables.split(",").empty?
+      table_list = tables.split(",").map { |table| "'#{table}'" }.join(",")
+
+      sql = <<-SQL
+        SELECT
+            conrelid::regclass AS table_name,
+            conname AS constraint_name,
+            pg_get_constraintdef(oid) AS constraint_definition
+        FROM
+            pg_constraint
+        WHERE
+            contype IN ('p', 'u') -- primary key, unique
+            AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = '#{schema}')
+            AND conrelid::regclass::text IN (#{table_list})
+      SQL
+      Query.run(query: sql, connection_url: conn_string, schema: schema)
+    end
+
+    # Recreate constraints, validating them if they were valid on the source
+    def self.recreate_constraints(
+      source_conn_string:,
+      target_conn_string:,
+      tables:,
+      schema:
+    )
+      logger.info("Recreating constraints on target database")
+
+      constraints =
+        fetch_constraints(
+          conn_string: source_conn_string,
+          tables: tables,
+          schema: schema,
+        )
+
+      constraints.each do |constraint|
+        not_valid_exists =
+          constraint[:constraint_definition].include?("NOT VALID")
+
+        constraint_definition =
+          (
+            if not_valid_exists
+              constraint[:constraint_definition]
+            else
+              "#{constraint[:constraint_definition]} NOT VALID"
+            end
+          )
+
+        add_constraint_sql =
+          "ALTER TABLE #{constraint[:table_name]} ADD CONSTRAINT #{constraint[:constraint_name]} #{constraint_definition};"
+        Query.run(
+          query: add_constraint_sql,
+          connection_url: target_conn_string,
+          schema: schema,
+          transaction: false,
+        )
+
+        next if constraint[:constraint_definition].include?("NOT VALID")
+        validate_constraint_sql =
+          "ALTER TABLE #{constraint[:table_name]} VALIDATE CONSTRAINT #{constraint[:constraint_name]};"
+        Query.run(
+          query: validate_constraint_sql,
+          connection_url: target_conn_string,
+          schema: schema,
+          transaction: false,
+        )
+      end
+    end
+
+    def self.recreate_indices_and_constraints(
+      source_conn_string:,
+      target_conn_string:,
+      tables:,
+      schema:
+    )
+      logger.info("Recreating indices and constraints on target database")
+
+      recreate_indices(
+        source_conn_string: source_conn_string,
+        target_conn_string: target_conn_string,
+        tables: tables,
+        schema: schema,
+      )
+
+      recreate_constraints(
+        source_conn_string: source_conn_string,
+        target_conn_string: target_conn_string,
+        tables: tables,
+        schema: schema,
+      )
+    end
+
     def self.wait_for_replication_completion(group_name:)
       loop do
         break if Stats.all_tables_replicating?(group_name)

@@ -25,10 +25,16 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       expect(result).to eq(
         [
           {
+            table_name: "sellers",
+            index_name: "sellers_id_index",
+            index_definition:
+              "CREATE INDEX sellers_id_index ON pger_test.sellers USING btree (id)",
+          },
+          {
+            table_name: "sellers",
+            index_name: "sellers_name_index",
             index_definition:
               "CREATE INDEX sellers_name_index ON pger_test.sellers USING btree (name)",
-            index_name: "sellers_name_index",
-            table_name: "sellers",
           },
         ],
       )
@@ -58,10 +64,16 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       expect(result).to eq(
         [
           {
+            table_name: "sellers",
+            index_name: "sellers_id_index",
+            index_definition:
+              "CREATE INDEX sellers_id_index ON pger_test.sellers USING btree (id)",
+          },
+          {
+            table_name: "sellers",
+            index_name: "sellers_name_index",
             index_definition:
               "CREATE INDEX sellers_name_index ON pger_test.sellers USING btree (name)",
-            index_name: "sellers_name_index",
-            table_name: "sellers",
           },
         ],
       )
@@ -174,6 +186,46 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
         .with("group_name")
         .exactly(3)
         .times
+    end
+  end
+
+  skip ".drop_constraints" do
+    before do
+      setup_tables
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
+    end
+
+    after do
+      teardown_tables
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+    end
+
+    it "drops constraints from the target database" do
+      constraints_before =
+        described_class.fetch_constraints(
+          conn_string: target_connection_url,
+          tables: "sellers, items",
+          schema: test_schema,
+        )
+
+      expect(constraints_before).not_to be_empty
+
+      described_class.drop_constraints(
+        source_conn_string: connection_url,
+        target_conn_string: target_connection_url,
+        tables: "sellers, items",
+        schema: test_schema,
+      )
+
+      # Ensure constraints are dropped
+      constraints_after =
+        described_class.fetch_constraints(
+          conn_string: target_connection_url,
+          tables: "sellers, items",
+          schema: test_schema,
+        )
+
+      expect(constraints_after).to be_empty
     end
   end
 end
