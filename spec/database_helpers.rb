@@ -117,19 +117,25 @@ module DatabaseHelpers
       "CREATE SCHEMA IF NOT EXISTS #{test_schema}; SET search_path TO #{test_schema};",
     )
 
-    return if conn.table_exists?("sellers")
-    conn.create_table("sellers") do
-      primary_key(:id)
-      column(:name, String)
-      column(:last_login, Time)
-      index(:name, unique: false)
+    unless conn.table_exists?("sellers")
+      conn.create_table("sellers") do
+        primary_key(:id)
+        column(:name, String, unique: true)
+        column(:last_login, Time)
+        index(:id)
+        index(:last_login)
+      end
     end
 
-    return if conn.table_exists?("items")
-    conn.create_table("items") do
-      primary_key(:id)
-      column(:name, String)
-      column(:last_purchase_at, Time)
+    unless conn.table_exists?("items")
+      conn.create_table("items") do
+        primary_key(:id)
+        column(:name, String)
+        column(:last_purchase_at, Time)
+        foreign_key(:seller_id, :sellers, on_delete: :cascade)
+        index(:seller_id)
+        index(:id)
+      end
     end
   ensure
     conn&.disconnect

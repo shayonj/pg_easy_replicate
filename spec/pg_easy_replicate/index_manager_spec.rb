@@ -14,7 +14,7 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
     end
 
-    it "fetches index information from the given connection string" do
+    it "fetches index information from the given connection string with no unique & PK indices" do
       result =
         described_class.fetch_indices(
           conn_string: connection_url,
@@ -25,10 +25,16 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       expect(result).to eq(
         [
           {
-            index_definition:
-              "CREATE INDEX sellers_name_index ON pger_test.sellers USING btree (name)",
-            index_name: "sellers_name_index",
             table_name: "sellers",
+            index_name: "sellers_id_index",
+            index_definition:
+              "CREATE INDEX sellers_id_index ON pger_test.sellers USING btree (id)",
+          },
+          {
+            table_name: "sellers",
+            index_name: "sellers_last_login_index",
+            index_definition:
+              "CREATE INDEX sellers_last_login_index ON pger_test.sellers USING btree (last_login)",
           },
         ],
       )
@@ -46,7 +52,7 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
     end
 
-    it "drops non-primary indices from the target database" do
+    it "drops non-primary + unique indices from the target database" do
       # Ensure index exists
       result =
         described_class.fetch_indices(
@@ -58,10 +64,16 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       expect(result).to eq(
         [
           {
-            index_definition:
-              "CREATE INDEX sellers_name_index ON pger_test.sellers USING btree (name)",
-            index_name: "sellers_name_index",
             table_name: "sellers",
+            index_name: "sellers_id_index",
+            index_definition:
+              "CREATE INDEX sellers_id_index ON pger_test.sellers USING btree (id)",
+          },
+          {
+            table_name: "sellers",
+            index_name: "sellers_last_login_index",
+            index_definition:
+              "CREATE INDEX sellers_last_login_index ON pger_test.sellers USING btree (last_login)",
           },
         ],
       )
@@ -107,10 +119,16 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       expect(result).to eq(
         [
           {
-            index_definition:
-              "CREATE INDEX sellers_name_index ON pger_test.sellers USING btree (name)",
-            index_name: "sellers_name_index",
             table_name: "sellers",
+            index_name: "sellers_id_index",
+            index_definition:
+              "CREATE INDEX sellers_id_index ON pger_test.sellers USING btree (id)",
+          },
+          {
+            table_name: "sellers",
+            index_name: "sellers_last_login_index",
+            index_definition:
+              "CREATE INDEX sellers_last_login_index ON pger_test.sellers USING btree (last_login)",
           },
         ],
       )
@@ -151,10 +169,16 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       expect(result).to eq(
         [
           {
-            index_definition:
-              "CREATE INDEX sellers_name_index ON pger_test.sellers USING btree (name)",
-            index_name: "sellers_name_index",
             table_name: "sellers",
+            index_name: "sellers_id_index",
+            index_definition:
+              "CREATE INDEX sellers_id_index ON pger_test.sellers USING btree (id)",
+          },
+          {
+            table_name: "sellers",
+            index_name: "sellers_last_login_index",
+            index_definition:
+              "CREATE INDEX sellers_last_login_index ON pger_test.sellers USING btree (last_login)",
           },
         ],
       )
