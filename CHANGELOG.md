@@ -1,3 +1,8 @@
+## [0.2.1] - 2023-12-29
+
+- Don't attempt to drop and recreate unique indices - #88
+- Dependency updates
+
 ## [0.2.0] - 2023-12-29
 
 - Recreate indices post COPY, once all tables are in replicating mode - #81
