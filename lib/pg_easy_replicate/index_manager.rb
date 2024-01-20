@@ -75,6 +75,7 @@ module PgEasyReplicate
             AND n.oid = t.relnamespace
             AND t.relkind = 'r'  -- only find indexes of tables
             AND ix.indisprimary = FALSE  -- exclude primary keys
+            AND ix.indisunique = FALSE  -- exclude unique indexes
             AND n.nspname = '#{schema}'
             AND t.relname IN (#{table_list})
         ORDER BY

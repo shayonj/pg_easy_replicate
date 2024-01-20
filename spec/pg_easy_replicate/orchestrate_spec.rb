@@ -448,10 +448,16 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       expect(result).to eq(
         [
           {
-            index_definition:
-              "CREATE INDEX sellers_name_index ON pger_test.sellers USING btree (name)",
-            index_name: "sellers_name_index",
             table_name: "sellers",
+            index_name: "sellers_id_index",
+            index_definition:
+              "CREATE INDEX sellers_id_index ON pger_test.sellers USING btree (id)",
+          },
+          {
+            table_name: "sellers",
+            index_name: "sellers_last_login_index",
+            index_definition:
+              "CREATE INDEX sellers_last_login_index ON pger_test.sellers USING btree (last_login)",
           },
         ],
       )
