@@ -18,12 +18,24 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       result =
         described_class.fetch_indices(
           conn_string: connection_url,
-          tables: "sellers, items",
+          tables: %w[sellers items],
           schema: test_schema,
         )
 
       expect(result).to eq(
         [
+          {
+            table_name: "items",
+            index_name: "items_id_index",
+            index_definition:
+              "CREATE INDEX items_id_index ON pger_test.items USING btree (id)",
+          },
+          {
+            table_name: "items",
+            index_name: "items_seller_id_index",
+            index_definition:
+              "CREATE INDEX items_seller_id_index ON pger_test.items USING btree (seller_id)",
+          },
           {
             table_name: "sellers",
             index_name: "sellers_id_index",
@@ -57,12 +69,24 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       result =
         described_class.fetch_indices(
           conn_string: target_connection_url,
-          tables: "sellers, items",
+          tables: %w[sellers items],
           schema: test_schema,
         )
 
       expect(result).to eq(
         [
+          {
+            table_name: "items",
+            index_name: "items_id_index",
+            index_definition:
+              "CREATE INDEX items_id_index ON pger_test.items USING btree (id)",
+          },
+          {
+            table_name: "items",
+            index_name: "items_seller_id_index",
+            index_definition:
+              "CREATE INDEX items_seller_id_index ON pger_test.items USING btree (seller_id)",
+          },
           {
             table_name: "sellers",
             index_name: "sellers_id_index",
@@ -81,14 +105,14 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       described_class.drop_indices(
         source_conn_string: connection_url,
         target_conn_string: target_connection_url,
-        tables: "sellers, items",
+        tables: %w[sellers items],
         schema: test_schema,
       )
 
       result =
         described_class.fetch_indices(
           conn_string: target_connection_url,
-          tables: "sellers, items",
+          tables: %w[sellers items],
           schema: test_schema,
         )
 
@@ -112,12 +136,24 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       result =
         described_class.fetch_indices(
           conn_string: target_connection_url,
-          tables: "sellers, items",
+          tables: %w[sellers items],
           schema: test_schema,
         )
 
       expect(result).to eq(
         [
+          {
+            table_name: "items",
+            index_name: "items_id_index",
+            index_definition:
+              "CREATE INDEX items_id_index ON pger_test.items USING btree (id)",
+          },
+          {
+            table_name: "items",
+            index_name: "items_seller_id_index",
+            index_definition:
+              "CREATE INDEX items_seller_id_index ON pger_test.items USING btree (seller_id)",
+          },
           {
             table_name: "sellers",
             index_name: "sellers_id_index",
@@ -136,7 +172,7 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       described_class.drop_indices(
         source_conn_string: connection_url,
         target_conn_string: target_connection_url,
-        tables: "sellers, items",
+        tables: %w[sellers items],
         schema: test_schema,
       )
 
@@ -145,7 +181,7 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       result =
         described_class.fetch_indices(
           conn_string: target_connection_url,
-          tables: "sellers, items",
+          tables: %w[sellers items],
           schema: test_schema,
         )
 
@@ -154,7 +190,7 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       described_class.recreate_indices(
         source_conn_string: connection_url,
         target_conn_string: target_connection_url,
-        tables: "sellers, items",
+        tables: %w[sellers items],
         schema: test_schema,
       )
 
@@ -162,12 +198,24 @@ RSpec.describe(PgEasyReplicate::IndexManager) do
       result =
         described_class.fetch_indices(
           conn_string: target_connection_url,
-          tables: "sellers, items",
+          tables: %w[sellers items],
           schema: test_schema,
         )
 
       expect(result).to eq(
         [
+          {
+            table_name: "items",
+            index_name: "items_id_index",
+            index_definition:
+              "CREATE INDEX items_id_index ON pger_test.items USING btree (id)",
+          },
+          {
+            table_name: "items",
+            index_name: "items_seller_id_index",
+            index_definition:
+              "CREATE INDEX items_seller_id_index ON pger_test.items USING btree (seller_id)",
+          },
           {
             table_name: "sellers",
             index_name: "sellers_id_index",

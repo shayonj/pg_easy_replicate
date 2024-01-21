@@ -77,7 +77,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         group_name: "cluster1",
         schema: test_schema,
         conn_string: connection_url,
-        tables: "items,sellers",
+        tables: %w[items sellers],
       )
 
       expect(pg_publication_tables(connection_url: connection_url)).to eq(
@@ -101,7 +101,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         group_name: "cluster1",
         schema: test_schema,
         conn_string: connection_url,
-        tables: "sellers,",
+        tables: ["sellers"],
       )
 
       expect(pg_publication_tables(connection_url: connection_url)).to eq(
@@ -133,7 +133,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
           schema: test_schema,
           conn_string: connection_url,
         )
-      expect(r).to eq("items,sellers")
+      expect(r.sort).to eq(%w[items sellers])
     end
   end
 
@@ -333,7 +333,8 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       described_class.run_vacuum_analyze(
         conn_string: target_connection_url,
         schema: test_schema,
-        tables: PgEasyReplicate::Group.find("cluster1")[:table_names],
+        tables:
+          PgEasyReplicate::Group.find("cluster1")[:table_names].split(","),
       )
       sleep 2
 
@@ -441,12 +442,24 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       result =
         PgEasyReplicate::IndexManager.fetch_indices(
           conn_string: target_connection_url,
-          tables: "sellers, items",
+          tables: %w[sellers items],
           schema: test_schema,
         )
 
       expect(result).to eq(
         [
+          {
+            table_name: "items",
+            index_name: "items_id_index",
+            index_definition:
+              "CREATE INDEX items_id_index ON pger_test.items USING btree (id)",
+          },
+          {
+            table_name: "items",
+            index_name: "items_seller_id_index",
+            index_definition:
+              "CREATE INDEX items_seller_id_index ON pger_test.items USING btree (seller_id)",
+          },
           {
             table_name: "sellers",
             index_name: "sellers_id_index",
@@ -497,7 +510,10 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       setup_roles
       setup_tables("james-bond_role_regular")
 
-      PgEasyReplicate.assert_config(special_user_role: "james-bond_super_role")
+      PgEasyReplicate.assert_config(
+        special_user_role: "james-bond_super_role",
+        schema_name: test_schema,
+      )
       PgEasyReplicate.bootstrap(
         {
           group_name: "cluster1",
@@ -516,7 +532,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       ENV["TARGET_DB_URL"] = target_connection_url
     end
 
-    it "succesfully raises create subscription super user error" do
+    it "succesfully raises lack of super user error" do
       conn1 =
         PgEasyReplicate::Query.connect(
           connection_url: connection_url("james-bond_role_regular"),
@@ -545,9 +561,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
           schema_name: test_schema,
           recreate_indices_post_copy: true,
         )
-      end.to raise_error(
-        /Starting sync failed: Unable to create subscription: PG::InsufficientPrivilege: ERROR:  must be superuser to create subscriptions/,
-      )
+      end.to raise_error(/Starting sync failed: PG::InsufficientPrivilege/)
 
       # expect(PgEasyReplicate::Group.find("cluster1")).to include(
       #   switchover_completed_at: nil,

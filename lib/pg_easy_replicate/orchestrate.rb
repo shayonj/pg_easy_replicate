@@ -46,7 +46,7 @@ module PgEasyReplicate
 
         Group.create(
           name: options[:group_name],
-          table_names: tables,
+          table_names: tables.join(","),
           schema_name: schema_name,
           started_at: Time.now.utc,
           recreate_indices_post_copy: options[:recreate_indices_post_copy],
@@ -63,7 +63,7 @@ module PgEasyReplicate
         else
           Group.create(
             name: options[:group_name],
-            table_names: tables,
+            table_names: tables.join(","),
             schema_name: schema_name,
             started_at: Time.now.utc,
             failed_at: Time.now.utc,
@@ -92,42 +92,24 @@ module PgEasyReplicate
         schema:,
         group_name:,
         conn_string:,
-        tables: ""
+        tables: []
       )
         logger.info(
           "Adding tables up publication",
           { publication_name: publication_name(group_name) },
         )
 
-        tables
-          .split(",")
-          .map do |table_name|
-            Query.run(
-              query:
-                "ALTER PUBLICATION #{quote_ident(publication_name(group_name))}
+        tables.map do |table_name|
+          Query.run(
+            query:
+              "ALTER PUBLICATION #{quote_ident(publication_name(group_name))}
                         ADD TABLE #{quote_ident(table_name)}",
-              connection_url: conn_string,
-              schema: schema,
-            )
-          end
+            connection_url: conn_string,
+            schema: schema,
+          )
+        end
       rescue => e
         raise "Unable to add tables to publication: #{e.message}"
-      end
-
-      def list_all_tables(schema:, conn_string:)
-        Query
-          .run(
-            query:
-              "SELECT table_name
-               FROM information_schema.tables
-               WHERE table_schema = '#{schema}' AND
-                 table_type = 'BASE TABLE'
-               ORDER BY table_name",
-            connection_url: conn_string,
-          )
-          .map(&:values)
-          .flatten
-          .join(",")
       end
 
       def drop_publication(group_name:, conn_string:)
@@ -225,10 +207,11 @@ module PgEasyReplicate
         lag_delta_size: nil
       )
         group = Group.find(group_name)
+        tables_list = group[:table_names].split(",")
 
         run_vacuum_analyze(
           conn_string: target_conn_string,
-          tables: group[:table_names],
+          tables: tables_list,
           schema: group[:schema_name],
         )
 
@@ -239,7 +222,7 @@ module PgEasyReplicate
           IndexManager.recreate_indices(
             source_conn_string: source_db_url,
             target_conn_string: target_db_url,
-            tables: group[:table_names],
+            tables: tables_list,
             schema: group[:schema_name],
           )
         end
@@ -257,7 +240,7 @@ module PgEasyReplicate
         # Run vacuum analyze to refresh the planner post switchover
         run_vacuum_analyze(
           conn_string: target_conn_string,
-          tables: group[:table_names],
+          tables: tables_list,
           schema: group[:schema_name],
         )
         drop_subscription(
@@ -369,37 +352,25 @@ module PgEasyReplicate
       end
 
       def run_vacuum_analyze(conn_string:, tables:, schema:)
-        tables
-          .split(",")
-          .each do |t|
-            logger.info(
-              "Running vacuum analyze on #{t}",
-              schema: schema,
-              table: t,
-            )
-            Query.run(
-              query: "VACUUM VERBOSE ANALYZE #{t}",
-              connection_url: conn_string,
-              schema: schema,
-              transaction: false,
-            )
-          end
+        tables.each do |t|
+          logger.info(
+            "Running vacuum analyze on #{t}",
+            schema: schema,
+            table: t,
+          )
+          Query.run(
+            query: "VACUUM VERBOSE ANALYZE #{t}",
+            connection_url: conn_string,
+            schema: schema,
+            transaction: false,
+          )
+        end
       rescue => e
         raise "Unable to run vacuum and analyze: #{e.message}"
       end
 
       def mark_switchover_complete(group_name)
         Group.update(group_name: group_name, switchover_completed_at: Time.now)
-      end
-
-      private
-
-      def determine_tables(schema:, conn_string:, list: "")
-        tables = list&.split(",") || []
-        unless tables.size > 0
-          return list_all_tables(schema: schema, conn_string: conn_string)
-        end
-        ""
       end
     end
   end
