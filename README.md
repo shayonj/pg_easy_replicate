@@ -4,7 +4,7 @@
 [![Smoke spec](https://github.com/shayonj/pg_easy_replicate/actions/workflows/smoke.yaml/badge.svg?branch=main)](https://github.com/shayonj/pg_easy_replicate/actions/workflows/ci.yaml)
 [![Gem Version](https://badge.fury.io/rb/pg_easy_replicate.svg?2)](https://badge.fury.io/rb/pg_easy_replicate)
 
-`pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up [logical replication](https://www.postgresql.org/docs/current/logical-replication.html) between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database) is fully replicated, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for performing minimal downtime (up to <1min, depending) major version upgrades between two PostgreSQL databases, load testing with blue/green database setup and other similar use cases.
+`pg_easy_replicate` is a CLI orchestrator tool that simplifies the process of setting up [logical replication](https://www.postgresql.org/docs/current/logical-replication.html) between two PostgreSQL databases. `pg_easy_replicate` also supports switchover. After the source (primary database) is fully replicated, `pg_easy_replicate` puts it into read-only mode and via logical replication flushes all data to the new target database. This ensures zero data loss and minimal downtime for the application. This method can be useful for performing minimal downtime (up to <1min, depending) major version upgrades between a Blue/Green PostgreSQL database setup, load testing and other similar use cases.
 
 Battle tested in production at [Tines](https://www.tines.com/) 🚀
 
@@ -19,7 +19,7 @@ Battle tested in production at [Tines](https://www.tines.com/) 🚀
   - [Config check](#config-check)
   - [Bootstrap](#bootstrap)
   - [Bootstrap and Config Check with special user role in AWS or GCP](#bootstrap-and-config-check-with-special-user-role-in-aws-or-gcp)
-    - [Config Check](#config-check)
+    - [Config Check](#config-check-1)
     - [Bootstrap](#bootstrap-1)
   - [Start sync](#start-sync)
   - [Stats](#stats)
@@ -29,7 +29,7 @@ Battle tested in production at [Tines](https://www.tines.com/) 🚀
   - [Rolling restart strategy](#rolling-restart-strategy)
   - [DNS Failover strategy](#dns-failover-strategy)
 - [FAQ](#faq)
-  - [Adding internal user to pgBouncer `userlist`](#adding-internal-user-to-pgbouncer-userlist)
+  - [Adding internal user to `pg_hba` or pgBouncer `userlist`](#adding-internal-user-to-pg_hba-or-pgbouncer-userlist)
 - [Contributing](#contributing)
 
 ## Installation
@@ -61,6 +61,7 @@ https://hub.docker.com/r/shayonj/pg_easy_replicate
 - PostgreSQL 10 and later
 - Ruby 3.0 and later
 - Database users should have `SUPERUSER` permissions, or pass in a special user with privileges to create the needed role, schema, publication and subscription on both databases. More on `--special-user-role` section below.
+- See more on [FAQ](#faq) below
 
 ## Limits
 
