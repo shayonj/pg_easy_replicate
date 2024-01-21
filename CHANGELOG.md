@@ -1,4 +1,8 @@
-## [0.2.1] - 2023-12-29
+## [0.2.1] - 2024-01-21
+
+- Extend config check to assert for REPLICA IDENTITY on tables and drop index bug - #88
+
+## [0.2.1] - 2024-01-20
 
 - Don't attempt to drop and recreate unique indices - #88
 - Dependency updates
