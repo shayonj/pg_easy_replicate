@@ -256,9 +256,9 @@ Next, you can set up a program that watches the `stats` and waits until `switcho
 
 ## FAQ
 
-### Adding internal user to pgBouncer `userlist`
+### Adding internal user to `pg_hba` or pgBouncer `userlist`
 
-`pg_easy_replicate` creates a special user to orchestrate the replication. If you use pgBouncer, you may need to allow `pger_su_h1a4fb` as a user that can perform login by adding it to the `userlist`.
+`pg_easy_replicate` sets up a designated user for managing the replication process. In case you handle user permissions through `pg_hba`, it's necessary to modify this list to permit sessions from `pger_su_h1a4fb`. Similarly, with pgBouncer, you'll need to authorize `pger_su_h1a4fb` for login access by including it in the `userlist`.
 
 ## Contributing
 
