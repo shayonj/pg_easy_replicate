@@ -26,7 +26,12 @@ module PgEasyReplicate
   extend Helper
 
   class << self
-    def config(special_user_role: nil, copy_schema: false)
+    def config(
+      special_user_role: nil,
+      copy_schema: false,
+      tables: "",
+      schema_name: nil
+    )
       abort_with("SOURCE_DB_URL is missing") if source_db_url.nil?
       abort_with("TARGET_DB_URL is missing") if target_db_url.nil?
 
@@ -56,15 +61,31 @@ module PgEasyReplicate
                 user: db_user(target_db_url),
               ),
             pg_dump_exists: pg_dump_exists,
+            tables_have_replica_identity:
+              tables_have_replica_identity?(
+                conn_string: source_db_url,
+                tables: tables,
+                schema_name: schema_name,
+              ),
           }
         rescue => e
           abort_with("Unable to check config: #{e.message}")
         end
     end
 
-    def assert_config(special_user_role: nil, copy_schema: false)
+    def assert_config(
+      special_user_role: nil,
+      copy_schema: false,
+      tables: "",
+      schema_name: nil
+    )
       config_hash =
-        config(special_user_role: special_user_role, copy_schema: copy_schema)
+        config(
+          special_user_role: special_user_role,
+          copy_schema: copy_schema,
+          tables: tables,
+          schema_name: schema_name,
+        )
 
       if copy_schema && !config_hash.dig(:pg_dump_exists)
         abort_with("pg_dump must exist if copy_schema (-c) is passed")
@@ -80,6 +101,19 @@ module PgEasyReplicate
 
       unless config_hash.dig(:source_db_is_super_user)
         abort_with("User on source database does not have super user privilege")
+      end
+
+      if tables.split(",").size > 0 && (schema_name.nil? || schema_name == "")
+        abort_with("Schema name is required if tables are passed")
+      end
+
+      unless config_hash.dig(:tables_have_replica_identity)
+        abort_with(
+          "Ensure all tables involved in logical replication have an appropriate replica identity set. This can be done using:
+        1. Default (Primary Key): `ALTER TABLE table_name REPLICA IDENTITY DEFAULT;`
+        2. Unique Index: `ALTER TABLE table_name REPLICA IDENTITY USING INDEX index_name;`
+        3. Full (All Columns): `ALTER TABLE table_name REPLICA IDENTITY FULL;`",
+        )
       end
 
       return if config_hash.dig(:target_db_is_super_user)
@@ -351,6 +385,48 @@ module PgEasyReplicate
           user: db_user(conn_string),
         )
         .any? { |q| q[:username] == user }
+    end
+
+    def tables_have_replica_identity?(
+      conn_string:,
+      tables: "",
+      schema_name: nil
+    )
+      schema_name ||= "public"
+
+      table_list =
+        determine_tables(
+          schema: schema_name,
+          conn_string: source_db_url,
+          list: tables,
+        )
+      return false if table_list.empty?
+
+      formatted_table_list = table_list.map { |table| "'#{table}'" }.join(", ")
+
+      sql = <<~SQL
+        SELECT t.relname AS table_name,
+              CASE
+                WHEN t.relreplident = 'd' THEN 'default'
+                WHEN t.relreplident = 'n' THEN 'nothing'
+                WHEN t.relreplident = 'i' THEN 'index'
+                WHEN t.relreplident = 'f' THEN 'full'
+              END AS replica_identity
+        FROM pg_class t
+        JOIN pg_namespace ns ON t.relnamespace = ns.oid
+        WHERE ns.nspname = '#{schema_name}'
+          AND t.relkind = 'r'
+          AND t.relname IN (#{formatted_table_list})
+      SQL
+
+      results =
+        Query.run(
+          query: sql,
+          connection_url: conn_string,
+          user: db_user(conn_string),
+        )
+
+      results.all? { |r| r[:replica_identity] != "nothing" }
     end
   end
 end

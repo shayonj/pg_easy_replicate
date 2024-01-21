@@ -6,8 +6,12 @@ RSpec.describe(PgEasyReplicate) do
   end
 
   describe ".config" do
+    before { setup_tables }
+
+    after { teardown_tables }
+
     it "returns the config for both databases" do
-      result = described_class.config
+      result = described_class.config(schema_name: test_schema)
       expect(result).to eq(
         {
           source_db_is_super_user: true,
@@ -19,6 +23,7 @@ RSpec.describe(PgEasyReplicate) do
             { name: "max_worker_processes", setting: "8" },
             { name: "wal_level", setting: "logical" },
           ],
+          tables_have_replica_identity: true,
           target_db: [
             { name: "max_logical_replication_workers", setting: "4" },
             { name: "max_replication_slots", setting: "10" },
@@ -84,6 +89,7 @@ RSpec.describe(PgEasyReplicate) do
             target_db_is_super_user: false,
             target_db: [{ name: "wal_level", setting: "logical" }],
             source_db: [{ name: "wal_level", setting: "logical" }],
+            tables_have_replica_identity: true,
           },
         )
         expect { described_class.assert_config }.to raise_error(
@@ -105,6 +111,36 @@ RSpec.describe(PgEasyReplicate) do
         expect {
           described_class.assert_config(copy_schema: true)
         }.to raise_error("pg_dump must exist if copy_schema (-c) is passed")
+      end
+
+      it "raises error when tables don't have replicat identity" do
+        allow(described_class).to receive(:config).and_return(
+          {
+            source_db_is_super_user: true,
+            target_db_is_super_user: true,
+            target_db: [{ name: "wal_level", setting: "logical" }],
+            source_db: [{ name: "wal_level", setting: "logical" }],
+            tables_have_replica_identity: false,
+          },
+        )
+        expect { described_class.assert_config }.to raise_error(
+          /Ensure all tables involved in logical replication have an appropriate replica identity/,
+        )
+      end
+
+      it "raises error when table is provided but schema isn't" do
+        allow(described_class).to receive(:config).and_return(
+          {
+            source_db_is_super_user: true,
+            target_db_is_super_user: true,
+            target_db: [{ name: "wal_level", setting: "logical" }],
+            source_db: [{ name: "wal_level", setting: "logical" }],
+            tables_have_replica_identity: true,
+          },
+        )
+        expect {
+          described_class.assert_config(tables: "items")
+        }.to raise_error(/Schema name is required if tables are passed/)
       end
     end
 

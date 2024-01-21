@@ -72,5 +72,32 @@ module PgEasyReplicate
       raise(msg) if test_env?
       abort(msg)
     end
+
+    def determine_tables(conn_string:, list: "", schema: nil)
+      schema ||= "public"
+
+      tables = list&.split(",") || []
+      if tables.size > 0
+        tables
+      else
+        list_all_tables(schema: schema, conn_string: conn_string)
+      end
+    end
+
+    def list_all_tables(schema:, conn_string:)
+      Query
+        .run(
+          query:
+            "SELECT table_name
+             FROM information_schema.tables
+             WHERE table_schema = '#{schema}' AND
+               table_type = 'BASE TABLE'
+             ORDER BY table_name",
+          connection_url: conn_string,
+          user: db_user(conn_string),
+        )
+        .map(&:values)
+        .flatten
+    end
   end
 end

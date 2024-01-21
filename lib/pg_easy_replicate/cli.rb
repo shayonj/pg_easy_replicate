@@ -16,10 +16,20 @@ module PgEasyReplicate
                   aliases: "-c",
                   boolean: true,
                   desc: "Copy schema to the new database"
+    method_option :tables,
+                  aliases: "-t",
+                  desc:
+                    "Comma separated list of table names. Default: All tables"
+    method_option :schema_name,
+                  aliases: "-s",
+                  desc:
+                    "Name of the schema tables are in, only required if passing list of tables"
     def config_check
       PgEasyReplicate.assert_config(
         special_user_role: options[:special_user_role],
         copy_schema: options[:copy_schema],
+        tables: options[:tables],
+        schema_name: options[:schema_name],
       )
 
       puts "✅ Config is looking good."

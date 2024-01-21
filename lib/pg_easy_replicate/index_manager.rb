@@ -17,7 +17,7 @@ module PgEasyReplicate
         tables: tables,
         schema: schema,
       ).each do |index|
-        drop_sql = "DROP INDEX CONCURRENTLY #{index[:index_name]};"
+        drop_sql = "DROP INDEX CONCURRENTLY #{schema}.#{index[:index_name]};"
 
         Query.run(
           query: drop_sql,
@@ -56,8 +56,8 @@ module PgEasyReplicate
     end
 
     def self.fetch_indices(conn_string:, tables:, schema:)
-      return [] if tables.split(",").empty?
-      table_list = tables.split(",").map { |table| "'#{table}'" }.join(",")
+      return [] if tables.empty?
+      table_list = tables.map { |table| "'#{table}'" }.join(",")
 
       sql = <<-SQL
         SELECT
