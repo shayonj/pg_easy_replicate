@@ -204,16 +204,19 @@ module PgEasyReplicate
         group_name:,
         source_conn_string: source_db_url,
         target_conn_string: target_db_url,
-        lag_delta_size: nil
+        lag_delta_size: nil,
+        skip_vacuum_analyze: false
       )
         group = Group.find(group_name)
         tables_list = group[:table_names].split(",")
 
-        run_vacuum_analyze(
-          conn_string: target_conn_string,
-          tables: tables_list,
-          schema: group[:schema_name],
-        )
+        unless skip_vacuum_analyze
+          run_vacuum_analyze(
+            conn_string: target_conn_string,
+            tables: tables_list,
+            schema: group[:schema_name],
+          )
+        end
 
         watch_lag(group_name: group_name, lag: lag_delta_size || DEFAULT_LAG)
 
