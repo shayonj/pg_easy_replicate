@@ -120,9 +120,9 @@ module PgEasyReplicate
                   desc: "The size of the lag to watch for before switchover. Default 200KB."
     method_option :skip_vacuum_analyze,
                   type: :boolean,
-                  default: true,
+                  default: false,
                   aliases: "-s",
-                  desc: "Skip vacuum analyzing tables before switchover. Default false."
+                  desc: "Skip vacuum analyzing tables before switchover."
 
     # method_option :bi_directional,
     #               aliases: "-b",
