@@ -123,7 +123,6 @@ module PgEasyReplicate
                   default: false,
                   aliases: "-s",
                   desc: "Skip vacuum analyzing tables before switchover."
-
     # method_option :bi_directional,
     #               aliases: "-b",
     #               desc:
