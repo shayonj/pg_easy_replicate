@@ -241,11 +241,13 @@ module PgEasyReplicate
         )
         mark_switchover_complete(group_name)
         # Run vacuum analyze to refresh the planner post switchover
-        run_vacuum_analyze(
-          conn_string: target_conn_string,
-          tables: tables_list,
-          schema: group[:schema_name],
-        )
+        unless skip_vacuum_analyze
+          run_vacuum_analyze(
+            conn_string: target_conn_string,
+            tables: tables_list,
+            schema: group[:schema_name],
+          )
+        end
         drop_subscription(
           group_name: group_name,
           target_conn_string: target_conn_string,
@@ -366,6 +368,7 @@ module PgEasyReplicate
             connection_url: conn_string,
             schema: schema,
             transaction: false,
+            timeout: "180s",
           )
         end
       rescue => e
