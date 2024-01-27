@@ -368,7 +368,7 @@ module PgEasyReplicate
             connection_url: conn_string,
             schema: schema,
             transaction: false,
-            timeout: "180s",
+            timeout: "600s",
           )
         end
       rescue => e
