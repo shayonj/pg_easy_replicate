@@ -506,6 +506,55 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         },
       )
     end
+
+    it "succesfully with no vacuum and analyze" do
+      conn1 =
+        PgEasyReplicate::Query.connect(
+          connection_url: connection_url,
+          schema: test_schema,
+        )
+      conn1[:items].insert(name: "Foo1")
+      expect(conn1[:items].first[:name]).to eq("Foo1")
+
+      # Expect no item in target DB
+      conn2 =
+        PgEasyReplicate::Query.connect(
+          connection_url: target_connection_url,
+          schema: test_schema,
+        )
+      expect(conn2[:items].first).to be_nil
+
+      ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
+      described_class.start_sync(
+        group_name: "cluster1",
+        schema_name: test_schema,
+        recreate_indices_post_copy: true,
+      )
+
+      conn1[:items].insert(name: "Foo2")
+
+      sleep 10
+
+      expect(conn1[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
+      expect(conn2[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
+
+      described_class.switchover(
+        group_name: "cluster1",
+        source_conn_string: connection_url,
+        target_conn_string: target_connection_url,
+        skip_vacuum_analyze: true,
+      )
+
+      # restore connection so cleanup can happen
+      described_class.restore_connections_on_source_db("cluster1")
+
+      expect(
+        vacuum_stats(url: target_connection_url, schema: test_schema),
+      ).to include(
+        { last_analyze: nil, last_vacuum: nil, relname: "sellers" },
+        { last_analyze: nil, last_vacuum: nil, relname: "items" },
+      )
+    end
   end
 
   # Note: Hard to test for special roles that act as superuser which aren't superuser, like rds_superuser
