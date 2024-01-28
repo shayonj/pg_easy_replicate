@@ -10,20 +10,22 @@ module PgEasyReplicate
         connection_url:,
         user: internal_user_name,
         schema: nil,
-        transaction: true
+        transaction: true,
+        timeout: nil
       )
         conn =
           connect(connection_url: connection_url, schema: schema, user: user)
+        timeout ||= "5s"
         if transaction
           r =
             conn.transaction do
               conn.run("SET search_path to #{quote_ident(schema)}") if schema
-              conn.run("SET statement_timeout to '5s'")
+              conn.run("SET statement_timeout to '#{timeout}'")
               conn.fetch(query).to_a
             end
         else
           conn.run("SET search_path to #{quote_ident(schema)}") if schema
-          conn.run("SET statement_timeout to '5s'")
+          conn.run("SET statement_timeout to '#{timeout}'")
           r = conn.fetch(query).to_a
         end
         conn.disconnect

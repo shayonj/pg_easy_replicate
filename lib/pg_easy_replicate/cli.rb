@@ -119,8 +119,12 @@ module PgEasyReplicate
                   desc: "Name of the group previously provisioned"
     method_option :lag_delta_size,
                   aliases: "-l",
-                  desc:
-                    "The size of the lag to watch for before switchover. Default 200KB."
+                  desc: "The size of the lag to watch for before switchover. Default 200KB."
+    method_option :skip_vacuum_analyze,
+                  type: :boolean,
+                  default: false,
+                  aliases: "-s",
+                  desc: "Skip vacuum analyzing tables before switchover."
     # method_option :bi_directional,
     #               aliases: "-b",
     #               desc:
@@ -129,6 +133,7 @@ module PgEasyReplicate
       PgEasyReplicate::Orchestrate.switchover(
         group_name: options[:group_name],
         lag_delta_size: options[:lag_delta_size],
+        skip_vacuum_analyze: options[:skip_vacuum_analyze]
       )
     end
 
