@@ -1,4 +1,16 @@
-## [0.2.1] - 2024-01-21
+## [0.2.3] - 2024-01-21
+
+- Fix tables check in config_check - #93
+- add option to skip vacuum analyzing on switchover - #92
+- Disable statement timeout and reset it before/after vacuum+analyze - #94
+- Add spec for skip_vacuum_analyze - #95
+
+Highlights
+
+- You can now skip vacuum and analyze by passing `--skip-vacuum-analyze` to `switchover`. Thanks to @honzasterba
+- Vacuum and Analyze won't run into timeouts. Thanks to the report from @TrueCarry
+
+## [0.2.2] - 2024-01-21
 
 - Extend config check to assert for REPLICA IDENTITY on tables and drop index bug - #88
 
