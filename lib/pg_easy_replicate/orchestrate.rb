@@ -363,12 +363,13 @@ module PgEasyReplicate
             schema: schema,
             table: t,
           )
+
           Query.run(
-            query: "VACUUM VERBOSE ANALYZE #{t}",
+            query: "VACUUM VERBOSE ANALYZE #{t};",
             connection_url: conn_string,
             schema: schema,
             transaction: false,
-            timeout: "600s",
+            using_vacuum_analyze: true,
           )
         end
       rescue => e

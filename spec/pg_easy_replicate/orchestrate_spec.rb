@@ -352,6 +352,14 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
           relname: "items",
         },
       )
+
+      expect(
+        PgEasyReplicate::Query.run(
+          query: "show statement_timeout",
+          connection_url: target_connection_url,
+          user: "james-bond",
+        ),
+      ).to eq([{ statement_timeout: "5s" }])
     end
   end
 
