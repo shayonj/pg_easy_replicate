@@ -18,6 +18,7 @@ module PgEasyReplicate
                   desc: "Copy schema to the new database"
     method_option :tables,
                   aliases: "-t",
+                  default: "",
                   desc:
                     "Comma separated list of table names. Default: All tables"
     method_option :schema_name,
@@ -87,6 +88,7 @@ module PgEasyReplicate
                     "Name of the schema tables are in, only required if passing list of tables"
     method_option :tables,
                   aliases: "-t",
+                  default: "",
                   desc:
                     "Comma separated list of table names. Default: All tables"
     method_option :recreate_indices_post_copy,
