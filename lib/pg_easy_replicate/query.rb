@@ -11,7 +11,7 @@ module PgEasyReplicate
         user: internal_user_name,
         schema: nil,
         transaction: true,
-        timeout: nil
+        using_vacuum_analyze: false
       )
         conn =
           connect(connection_url: connection_url, schema: schema, user: user)
@@ -25,7 +25,11 @@ module PgEasyReplicate
             end
         else
           conn.run("SET search_path to #{quote_ident(schema)}") if schema
-          conn.run("SET statement_timeout to '#{timeout}'")
+          if using_vacuum_analyze
+            conn.run("SET statement_timeout=0")
+          else
+            conn.run("SET statement_timeout to '5s'")
+          end
           r = conn.fetch(query).to_a
         end
         conn.disconnect
