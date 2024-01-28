@@ -4,7 +4,8 @@ RSpec.describe("SmokeSpec") do
   describe "dataset" do
     it "matches after switchover" do
       # Bootstrap
-      `./scripts/e2e-bootstrap.sh`
+      system("./scripts/e2e-bootstrap.sh")
+      expect($CHILD_STATUS.success?).to be(true)
 
       r =
         PgEasyReplicate::Query.run(
