@@ -26,6 +26,19 @@ RSpec.describe(PgEasyReplicate::Query) do
       expect(result).to eq([{ statement_timeout: "5s" }])
     end
 
+    it "sets the statement_timeout using env var" do
+      stub_const("ENV", { "PG_EASY_REPLICATE_STATEMENT_TIMEOUT" => "10s" })
+
+      result =
+        described_class.run(
+          query: "show statement_timeout",
+          connection_url: connection_url,
+          user: "james-bond",
+        )
+
+      expect(result).to eq([{ statement_timeout: "10s" }])
+    end
+
     it "performs rollback successfully" do
       query = "ALTER TABLE sellers DROP COLUMN last_login;"
       allow_any_instance_of(Sequel::Postgres::Database).to receive(
