@@ -1,3 +1,7 @@
+## [0.2.4] - 2024-02-13
+
+- Introduce PG_EASY_REPLICATE_STATEMENT_TIMEOUT env var
+
 ## [0.2.3] - 2024-01-21
 
 - Fix tables check in config_check - #93
