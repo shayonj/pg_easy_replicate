@@ -76,6 +76,14 @@ $ export SOURCE_DB_URL="postgres://USERNAME:PASSWORD@localhost:5432/DATABASE_NAM
 $ export TARGET_DB_URL="postgres://USERNAME:PASSWORD@localhost:5433/DATABASE_NAME"
 ```
 
+**Optional**
+
+You can extend the default timeout by setting the following environment variable
+
+```bash
+$ export PG_EASY_REPLICATE_STATEMENT_TIMEOUT="10s" # default 5s
+```
+
 Any `pg_easy_replicate` command can be run the same way with the docker image as well. As long the container is running in an environment where it has access to both the databases. Example
 
 ```bash
