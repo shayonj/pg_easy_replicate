@@ -4,7 +4,7 @@ PATH
     pg_easy_replicate (0.2.4)
       ougai (~> 2.0.0)
       pg (~> 1.5.3)
-      sequel (>= 5.69, < 5.78)
+      sequel (>= 5.69, < 5.79)
       thor (>= 1.2.2, < 1.4.0)
 
 GEM
@@ -81,7 +81,7 @@ GEM
       rubocop-capybara (~> 2.17)
       rubocop-factory_bot (~> 2.22)
     ruby-progressbar (1.13.0)
-    sequel (5.77.0)
+    sequel (5.78.0)
       bigdecimal
     syntax_tree (6.2.0)
       prettier_print (>= 1.2.0)
