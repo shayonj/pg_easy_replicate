@@ -88,10 +88,12 @@ module PgEasyReplicate
       Query
         .run(
           query:
-            "SELECT table_name
-             FROM information_schema.tables
-             WHERE table_schema = '#{schema}' AND
-               table_type = 'BASE TABLE'
+            "SELECT c.relname::information_schema.sql_identifier AS table_name
+             FROM pg_namespace n
+               JOIN pg_class c ON n.oid = c.relnamespace
+             WHERE c.relkind = 'r'
+               AND c.relpersistence = 'p'
+               AND n.nspname::information_schema.sql_identifier = '#{schema}'
              ORDER BY table_name",
           connection_url: conn_string,
           user: db_user(conn_string),
