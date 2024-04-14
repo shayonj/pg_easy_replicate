@@ -1,3 +1,7 @@
+## [0.2.4] - 2024-04-14
+
+- List only permanent tables - #113
+
 ## [0.2.4] - 2024-02-13
 
 - Introduce PG_EASY_REPLICATE_STATEMENT_TIMEOUT env var
