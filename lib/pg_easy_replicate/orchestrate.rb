@@ -365,7 +365,7 @@ module PgEasyReplicate
           )
 
           Query.run(
-            query: "VACUUM VERBOSE ANALYZE #{t};",
+            query: "VACUUM VERBOSE ANALYZE #{quote_ident(t)};",
             connection_url: conn_string,
             schema: schema,
             transaction: false,
