@@ -80,7 +80,7 @@ module PgEasyReplicate
       if tables.size > 0
         tables
       else
-        list_all_tables(schema: schema, conn_string: conn_string)
+        list_all_tables(schema: schema, conn_string: conn_string) - %w[ spatial_ref_sys ]
       end
     end
 

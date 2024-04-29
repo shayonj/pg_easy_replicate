@@ -137,6 +137,17 @@ module DatabaseHelpers
         index(:id)
       end
     end
+
+    unless conn.table_exists?("spatial_ref_sys")
+      conn.create_table("spatial_ref_sys") do
+        primary_key(:id)
+        column(:name, String)
+        column(:last_purchase_at, Time)
+        foreign_key(:seller_id, :sellers, on_delete: :cascade)
+        index(:seller_id)
+        index(:id)
+      end
+    end
   ensure
     conn&.disconnect
   end
