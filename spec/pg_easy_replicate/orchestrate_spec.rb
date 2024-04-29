@@ -73,11 +73,16 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     end
 
     it "succesfully for all tables" do
+      tables = described_class.determine_tables(
+        schema: test_schema,
+        conn_string: connection_url,
+      )
+
       described_class.add_tables_to_publication(
         group_name: "cluster1",
         schema: test_schema,
         conn_string: connection_url,
-        tables: %w[items sellers],
+        tables: tables,
       )
 
       expect(pg_publication_tables(connection_url: connection_url)).to eq(
@@ -133,7 +138,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
           schema: test_schema,
           conn_string: connection_url,
         )
-      expect(r.sort).to eq(%w[items sellers])
+      expect(r.sort).to eq(%w[items sellers spatial_ref_sys])
     end
   end
 
