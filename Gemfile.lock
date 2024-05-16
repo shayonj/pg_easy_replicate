@@ -38,7 +38,8 @@ GEM
     rake (13.1.0)
     rbs (3.1.0)
     regexp_parser (2.9.0)
-    rexml (3.2.6)
+    rexml (3.2.8)
+      strscan (>= 3.0.9)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -86,6 +87,7 @@ GEM
     ruby-progressbar (1.13.0)
     sequel (5.79.0)
       bigdecimal
+    strscan (3.1.0)
     syntax_tree (6.2.0)
       prettier_print (>= 1.2.0)
     syntax_tree-haml (4.0.3)
