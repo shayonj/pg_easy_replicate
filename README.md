@@ -69,8 +69,11 @@ All [Logical Replication Restrictions](https://www.postgresql.org/docs/current/l
 
 ## Usage
 
-Ensure `SOURCE_DB_URL` and `TARGET_DB_URL` are present as environment variables in the runtime environment. The URL are of the postgres connection string format. Example:
+Ensure `SOURCE_DB_URL` and `TARGET_DB_URL` are present as environment variables in the runtime environment. 
+- `SOURCE_DB_URL` = The database that you want to replicate FROM.
+- `TARGET_DB_URL` = The database that you want to replicate TO.
 
+The URL should be in postgres connection string format. Example:
 ```bash
 $ export SOURCE_DB_URL="postgres://USERNAME:PASSWORD@localhost:5432/DATABASE_NAME"
 $ export TARGET_DB_URL="postgres://USERNAME:PASSWORD@localhost:5433/DATABASE_NAME"
@@ -82,6 +85,12 @@ You can extend the default timeout by setting the following environment variable
 
 ```bash
 $ export PG_EASY_REPLICATE_STATEMENT_TIMEOUT="10s" # default 5s
+```
+
+You can get additional debug logging by adding the following environment variable
+
+```bash
+$ export DEBUG="true"
 ```
 
 Any `pg_easy_replicate` command can be run the same way with the docker image as well. As long the container is running in an environment where it has access to both the databases. Example
@@ -244,6 +253,19 @@ $ pg_easy_replicate start_sync --group-name database-cluster-2 --schema-name pub
 ...
 $ pg_easy_replicate switchover  --group-name database-cluster-1
 $ pg_easy_replicate switchover  --group-name database-cluster-2
+...
+```
+
+### Cleanup
+
+Use `cleanup` if you want to remove all bootstrapped data for the specified group. Additionally you can pass `-e` or `--everything` in order to clean up all schema changes for bootstrapped tables, users and any publication/subscription data.
+
+```bash
+$ pg_easy_replicate cleanup  --group-name database-cluster-1 --everything
+
+{"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":24192,"level":30,"time":"2023-06-19T16:05:23.033-04:00","v":0,"msg":"Dropping groups table","version":"0.1.0"}
+
+{"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":24192,"level":30,"time":"2023-06-19T16:05:23.033-04:00","v":0,"msg":"Dropping schema","version":"0.1.0"}
 ...
 ```
 
