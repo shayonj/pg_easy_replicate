@@ -106,6 +106,7 @@ module PgEasyReplicate
                         ADD TABLE #{quote_ident(table_name)}",
             connection_url: conn_string,
             schema: schema,
+            user: db_user(conn_string),
           )
         end
       rescue => e
