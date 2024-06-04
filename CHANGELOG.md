@@ -1,4 +1,10 @@
-## [0.2.4] - 2024-04-14
+## [0.2.6] - 2024-06-04
+
+- Quote table name in the VACUUM SQL - #118
+- Exclude tables created by extensions - #120
+- Use db user when adding tables to replication - #130
+
+## [0.2.5] - 2024-04-14
 
 - List only permanent tables - #113
 
