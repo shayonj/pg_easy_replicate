@@ -73,14 +73,19 @@ module PgEasyReplicate
       abort(msg)
     end
 
-    def determine_tables(conn_string:, list: "", schema: nil)
+    def determine_tables(conn_string:, list: "", exclude_list: "", schema: nil)
       schema ||= "public"
 
       tables = list&.split(",") || []
-      if tables.size > 0
+      exclude_tables = exclude_list&.split(",") || []
+
+      if tables.any? && exclude_tables.any?
+        abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
+      elsif tables.any?
         tables
       else
-        list_all_tables(schema: schema, conn_string: conn_string) - %w[ spatial_ref_sys ]
+        all_tables = list_all_tables(schema: schema, conn_string: conn_string) - %w[spatial_ref_sys]
+        all_tables - exclude_tables
       end
     end
 
