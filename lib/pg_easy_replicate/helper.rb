@@ -79,9 +79,9 @@ module PgEasyReplicate
       tables = list&.split(",") || []
       exclude_tables = exclude_list&.split(",") || []
 
-      if tables.any? && exclude_tables.any?
+      if !tables.empty? && !exclude_tables.empty?
         abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
-      elsif tables.any?
+      elsif !tables.empty?
         tables
       else
         all_tables = list_all_tables(schema: schema, conn_string: conn_string) - %w[spatial_ref_sys]

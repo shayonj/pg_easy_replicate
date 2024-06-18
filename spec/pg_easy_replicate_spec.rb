@@ -21,7 +21,7 @@ RSpec.describe(PgEasyReplicate) do
             { name: "max_replication_slots", setting: "10" },
             { name: "max_wal_senders", setting: "10" },
             { name: "max_worker_processes", setting: "8" },
-            { name: "wal_level", setting: "logical" },
+            { name: "wal_level", setting: "replica" },
           ],
           tables_have_replica_identity: true,
           target_db: [
@@ -36,7 +36,7 @@ RSpec.describe(PgEasyReplicate) do
       )
     end
 
-    describe ".assert_confg" do
+    describe ".assert_config" do
       let(:source_db_config_without_logical) do
         {
           source_db: [{ name: "wal_level", setting: "replication" }],
@@ -413,5 +413,33 @@ RSpec.describe(PgEasyReplicate) do
         )
       end
     end
+
+    describe ".exclude_tables" do
+      before { setup_tables }
+    
+      after { teardown_tables }
+
+      tables = "items"
+    
+      it "returns error if tables and exclude_tables specified tables are both specified" do
+        expect { described_class.config(tables: tables, exclude_tables: tables, schema_name: test_schema) }.to raise_error(RuntimeError)
+        expect { described_class.assert_config(tables: tables, exclude_tables: tables, schema_name: test_schema) }.to raise_error(RuntimeError)
+      end
+
+      it "doesnt return error if only exclude_tables specified tables are both specified" do
+        allow(described_class).to receive(:config).and_return(
+          {
+            source_db_is_super_user: true,
+            target_db_is_super_user: true,
+            target_db: [{ name: "wal_level", setting: "logical" }],
+            source_db: [{ name: "wal_level", setting: "logical" }],
+            tables_have_replica_identity: true,
+          },
+        )
+        expect { described_class.config(exclude_tables: tables, schema_name: test_schema) }.not_to raise_error
+        expect { described_class.assert_config(exclude_tables: tables, schema_name: test_schema) }.not_to raise_error
+      end
+    end
+    
   end
 end

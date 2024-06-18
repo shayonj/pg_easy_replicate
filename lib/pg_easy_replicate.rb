@@ -35,6 +35,10 @@ module PgEasyReplicate
     )
       abort_with("SOURCE_DB_URL is missing") if source_db_url.nil?
       abort_with("TARGET_DB_URL is missing") if target_db_url.nil?
+      
+      if !tables.empty? && !exclude_tables.empty?
+        abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
+      end
 
       system("which pg_dump")
       pg_dump_exists = $CHILD_STATUS.success?
@@ -107,9 +111,9 @@ module PgEasyReplicate
         abort_with("User on source database does not have super user privilege")
       end
 
-      if tables.any? && exclude_tables.any?
+      if !tables.empty? && !exclude_tables.empty?
         abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
-      elsif tables.any?
+      elsif !tables.empty?
         if tables.split(",").size > 0 && (schema_name.nil? || schema_name == "")
           abort_with("Schema name is required if tables are passed")
         end
