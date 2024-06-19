@@ -698,7 +698,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       teardown_tables
     end
 
-    it "successfully excludes specific tables from replication" do
+    it "successfully excludes specific tables for replication" do
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       described_class.start_sync(
         group_name: "cluster1",
@@ -712,6 +712,19 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       )
       expect(PgEasyReplicate::Group.find("cluster1")).not_to include(
         table_names: "items"
+      )
+    end
+
+    it "successfully includes tables for replication if exclude_tables is not set" do
+      ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
+      described_class.start_sync(
+        group_name: "cluster1",
+        schema_name: test_schema,
+        recreate_indices_post_copy: true,
+      )
+
+      expect(PgEasyReplicate::Group.find("cluster1")).to include(
+        table_names: "items,sellers",
       )
     end
   end
