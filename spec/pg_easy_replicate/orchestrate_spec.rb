@@ -740,7 +740,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         schema: test_schema,
         conn_string: connection_url,
       )
-      expect(tables).to eq(%w(items sellers))
+      expect(tables).to eq(%w[items sellers])
     end
   end
 end
