@@ -111,14 +111,17 @@ module PgEasyReplicate
         abort_with("User on source database does not have super user privilege")
       end
 
+      tables = tables.is_a?(Array) ? tables : tables&.split(",") || []
+      exclude_tables = exclude_tables.is_a?(Array) ? exclude_tables : exclude_tables&.split(",") || []
+
       if !tables.empty? && !exclude_tables.empty?
         abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
       elsif !tables.empty?
-        if tables.split(",").size > 0 && (schema_name.nil? || schema_name == "")
+        if tables.size > 0 && (schema_name.nil? || schema_name == "")
           abort_with("Schema name is required if tables are passed")
         end
       else
-        if exclude_tables.split(",").size > 0 && (schema_name.nil? || schema_name == "")
+        if exclude_tables.size > 0 && (schema_name.nil? || schema_name == "")
           abort_with("Schema name is required if exclude tables are passed")
         end
       end
