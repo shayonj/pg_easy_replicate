@@ -76,8 +76,8 @@ module PgEasyReplicate
     def determine_tables(conn_string:, list: "", exclude_list: "", schema: nil)
       schema ||= "public"
 
-      tables = list&.split(",") || []
-      exclude_tables = exclude_list&.split(",") || []
+      tables = list.is_a?(Array) ? list : list&.split(",") || []
+      exclude_tables = exclude_list.is_a?(Array) ? exclude_list : exclude_list&.split(",") || []
 
       if !tables.empty? && !exclude_tables.empty?
         abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
