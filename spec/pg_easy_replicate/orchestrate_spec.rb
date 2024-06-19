@@ -713,6 +713,15 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       expect(PgEasyReplicate::Group.find("cluster1")).not_to include(
         table_names: "items"
       )
+
+      tables = described_class.determine_tables(
+        schema: test_schema,
+        conn_string: connection_url,
+        exclude_list: ["items"],
+      )
+
+      expect(tables).to include("sellers")
+      expect(tables).not_to include("items")
     end
 
     it "successfully includes tables for replication if exclude_tables is not set" do
@@ -726,6 +735,12 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       expect(PgEasyReplicate::Group.find("cluster1")).to include(
         table_names: "items,sellers",
       )
+
+      tables = described_class.determine_tables(
+        schema: test_schema,
+        conn_string: connection_url,
+      )
+      expect(tables).to eq(["items", "sellers"])
     end
   end
 end
