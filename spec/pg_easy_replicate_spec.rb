@@ -21,7 +21,7 @@ RSpec.describe(PgEasyReplicate) do
             { name: "max_replication_slots", setting: "10" },
             { name: "max_wal_senders", setting: "10" },
             { name: "max_worker_processes", setting: "8" },
-            { name: "wal_level", setting: "replica" },
+            { name: "wal_level", setting: "logical" },
           ],
           tables_have_replica_identity: true,
           target_db: [
