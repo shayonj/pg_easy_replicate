@@ -78,10 +78,9 @@ module PgEasyReplicate
       
       tables = convert_to_array(list)
       exclude_tables = convert_to_array(exclude_list)
+      validate_table_lists(tables, exclude_tables, schema)
 
-      if !tables.empty? && !exclude_tables.empty?
-        abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
-      elsif !tables.empty?
+      if !tables.empty?
         tables
       else
         all_tables = list_all_tables(schema: schema, conn_string: conn_string)
