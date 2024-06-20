@@ -106,25 +106,24 @@ module PgEasyReplicate
         .map(&:values)
         .flatten
     end
-  end
 
-  def convert_to_array(input)
-    input.is_a?(Array) ? input : input&.split(",") || []
-  end
+    def convert_to_array(input)
+      input.is_a?(Array) ? input : input&.split(",") || []
+    end
 
-  def validate_table_lists(tables, exclude_tables, schema_name)
-    table_list = convert_to_array(tables)
-    exclude_table_list = convert_to_array(exclude_tables)
+    def validate_table_lists(tables, exclude_tables, schema_name)
+      table_list = convert_to_array(tables)
+      exclude_table_list = convert_to_array(exclude_tables)
 
-    if !table_list.empty? && !exclude_table_list.empty?
-      abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
-    elsif !table_list.empty?
-      if table_list.size > 0 && (schema_name.nil? || schema_name == "")
-        abort_with("Schema name is required if tables are passed")
+      if !table_list.empty? && !exclude_table_list.empty?
+        abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
+      elsif !table_list.empty?
+        if table_list.size > 0 && (schema_name.nil? || schema_name == "")
+          abort_with("Schema name is required if tables are passed")
+        end
+      elsif exclude_table_list.size > 0 && (schema_name.nil? || schema_name == "")
+        abort_with("Schema name is required if exclude tables are passed")
       end
-    elsif exclude_table_list.size > 0 && (schema_name.nil? || schema_name == "")
-      abort_with("Schema name is required if exclude tables are passed")
     end
   end
-end
 end
