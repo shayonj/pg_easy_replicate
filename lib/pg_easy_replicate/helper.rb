@@ -80,11 +80,11 @@ module PgEasyReplicate
       exclude_tables = convert_to_array(exclude_list)
       validate_table_lists(tables, exclude_tables, schema)
 
-      if !tables.empty?
-        tables
-      else
+      if tables.empty?
         all_tables = list_all_tables(schema: schema, conn_string: conn_string)
         all_tables - (exclude_tables + %w[spatial_ref_sys])
+      else
+        tables
       end
     end
 
