@@ -682,7 +682,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     end
   end
   
-  describe ".exclude_tables" do
+  describe "excluding tables" do
     before do
       setup_tables
       PgEasyReplicate.bootstrap({ group_name: "cluster1" })

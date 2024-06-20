@@ -75,17 +75,17 @@ module PgEasyReplicate
 
     def determine_tables(conn_string:, list: "", exclude_list: "", schema: nil)
       schema ||= "public"
-
-      tables = list.is_a?(Array) ? list : list&.split(",") || []
-      exclude_tables = exclude_list.is_a?(Array) ? exclude_list : exclude_list&.split(",") || []
+      
+      tables = convert_to_array(list)
+      exclude_tables = convert_to_array(exclude_list)
 
       if !tables.empty? && !exclude_tables.empty?
         abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
       elsif !tables.empty?
         tables
       else
-        all_tables = list_all_tables(schema: schema, conn_string: conn_string) - %w[spatial_ref_sys]
-        all_tables - exclude_tables
+        all_tables = list_all_tables(schema: schema, conn_string: conn_string)
+        all_tables - (exclude_tables + %w[spatial_ref_sys])
       end
     end
 
@@ -107,4 +107,24 @@ module PgEasyReplicate
         .flatten
     end
   end
+
+  def convert_to_array(input)
+    input.is_a?(Array) ? input : input&.split(",") || []
+  end
+
+  def validate_table_lists(tables, exclude_tables, schema_name)
+    table_list = convert_to_array(tables)
+    exclude_table_list = convert_to_array(exclude_tables)
+
+    if !table_list.empty? && !exclude_table_list.empty?
+      abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
+    elsif !table_list.empty?
+      if table_list.size > 0 && (schema_name.nil? || schema_name == "")
+        abort_with("Schema name is required if tables are passed")
+      end
+    elsif exclude_table_list.size > 0 && (schema_name.nil? || schema_name == "")
+      abort_with("Schema name is required if exclude tables are passed")
+    end
+  end
+end
 end

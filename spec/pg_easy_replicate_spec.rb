@@ -414,7 +414,7 @@ RSpec.describe(PgEasyReplicate) do
       end
     end
 
-    describe ".exclude_tables" do
+    describe ".excluding tables" do
       before { setup_tables }
     
       after { teardown_tables }
