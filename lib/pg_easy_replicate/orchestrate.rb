@@ -15,6 +15,7 @@ module PgEasyReplicate
             schema: schema_name,
             conn_string: source_db_url,
             list: options[:tables],
+            exclude_list: options[:exclude_tables]
           )
 
         if options[:recreate_indices_post_copy]

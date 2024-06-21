@@ -681,4 +681,66 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       # described_class.restore_connections_on_source_db("cluster1")
     end
   end
+  
+  describe "excluding tables" do
+    before do
+      setup_tables
+      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
+    end
+
+    after do
+      described_class.stop_sync(
+        group_name: "cluster1",
+        source_conn_string: connection_url,
+        target_conn_string: target_connection_url,
+      )
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
+      teardown_tables
+    end
+
+    it "successfully excludes specific tables for replication" do
+      ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
+      described_class.start_sync(
+        group_name: "cluster1",
+        schema_name: test_schema,
+        recreate_indices_post_copy: true,
+        exclude_tables: ["items"],
+      )
+
+      expect(PgEasyReplicate::Group.find("cluster1")).to include(
+        table_names: "sellers",
+      )
+      expect(PgEasyReplicate::Group.find("cluster1")).not_to include(
+        table_names: "items"
+      )
+
+      tables = described_class.determine_tables(
+        schema: test_schema,
+        conn_string: connection_url,
+        exclude_list: ["items"],
+      )
+
+      expect(tables).to include("sellers")
+      expect(tables).not_to include("items")
+    end
+
+    it "successfully includes tables for replication if exclude_tables is not set" do
+      ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
+      described_class.start_sync(
+        group_name: "cluster1",
+        schema_name: test_schema,
+        recreate_indices_post_copy: true,
+      )
+
+      expect(PgEasyReplicate::Group.find("cluster1")).to include(
+        table_names: "items,sellers",
+      )
+
+      tables = described_class.determine_tables(
+        schema: test_schema,
+        conn_string: connection_url,
+      )
+      expect(tables).to eq(%w[items sellers])
+    end
+  end
 end

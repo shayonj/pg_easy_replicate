@@ -30,10 +30,15 @@ module PgEasyReplicate
       special_user_role: nil,
       copy_schema: false,
       tables: "",
+      exclude_tables: "",
       schema_name: nil
     )
       abort_with("SOURCE_DB_URL is missing") if source_db_url.nil?
       abort_with("TARGET_DB_URL is missing") if target_db_url.nil?
+      
+      if !tables.empty? && !exclude_tables.empty?
+        abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
+      end
 
       system("which pg_dump")
       pg_dump_exists = $CHILD_STATUS.success?
@@ -65,6 +70,7 @@ module PgEasyReplicate
               tables_have_replica_identity?(
                 conn_string: source_db_url,
                 tables: tables,
+                exclude_tables: exclude_tables,
                 schema_name: schema_name,
               ),
           }
@@ -77,6 +83,7 @@ module PgEasyReplicate
       special_user_role: nil,
       copy_schema: false,
       tables: "",
+      exclude_tables: "",
       schema_name: nil
     )
       config_hash =
@@ -84,6 +91,7 @@ module PgEasyReplicate
           special_user_role: special_user_role,
           copy_schema: copy_schema,
           tables: tables,
+          exclude_tables: exclude_tables,
           schema_name: schema_name,
         )
 
@@ -103,9 +111,7 @@ module PgEasyReplicate
         abort_with("User on source database does not have super user privilege")
       end
 
-      if tables.split(",").size > 0 && (schema_name.nil? || schema_name == "")
-        abort_with("Schema name is required if tables are passed")
-      end
+      validate_table_lists(tables, exclude_tables, schema_name)
 
       unless config_hash.dig(:tables_have_replica_identity)
         abort_with(
@@ -390,6 +396,7 @@ module PgEasyReplicate
     def tables_have_replica_identity?(
       conn_string:,
       tables: "",
+      exclude_tables: "",
       schema_name: nil
     )
       schema_name ||= "public"
@@ -399,6 +406,7 @@ module PgEasyReplicate
           schema: schema_name,
           conn_string: source_db_url,
           list: tables,
+          exclude_list: exclude_tables,
         )
       return false if table_list.empty?
 

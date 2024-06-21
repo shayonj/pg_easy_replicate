@@ -256,6 +256,17 @@ $ pg_easy_replicate switchover  --group-name database-cluster-2
 ...
 ```
 
+## Exclude tables from replication
+
+By default all tables are added for replication but you can exclude tables if necessary. Example
+
+```bash
+...
+$ pg_easy_replicate bootstrap --group-name database-cluster-1 --copy-schema
+$ pg_easy_replicate start_sync --group-name database-cluster-1 --schema-name public --exclude_tables "events"
+...
+```
+
 ### Cleanup
 
 Use `cleanup` if you want to remove all bootstrapped data for the specified group. Additionally you can pass `-e` or `--everything` in order to clean up all schema changes for bootstrapped tables, users and any publication/subscription data.

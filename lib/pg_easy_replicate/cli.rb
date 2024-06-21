@@ -21,6 +21,11 @@ module PgEasyReplicate
                   default: "",
                   desc:
                     "Comma separated list of table names. Default: All tables"
+    method_option :exclude_tables,
+                  aliases: "-e",
+                  default: "",
+                  desc:
+                    "Comma separated list of table names to exclude. Default: None"
     method_option :schema_name,
                   aliases: "-s",
                   desc:
@@ -30,6 +35,7 @@ module PgEasyReplicate
         special_user_role: options[:special_user_role],
         copy_schema: options[:copy_schema],
         tables: options[:tables],
+        exclude_tables: options[:exclude_tables],
         schema_name: options[:schema_name],
       )
 
@@ -91,6 +97,11 @@ module PgEasyReplicate
                   default: "",
                   desc:
                     "Comma separated list of table names. Default: All tables"
+    method_option :exclude_tables,
+                  aliases: "-e",
+                  default: "",
+                  desc:
+                    "Comma separated list of table names to exclude. Default: None"
     method_option :recreate_indices_post_copy,
                   type: :boolean,
                   default: true,

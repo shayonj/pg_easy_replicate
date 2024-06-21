@@ -73,14 +73,18 @@ module PgEasyReplicate
       abort(msg)
     end
 
-    def determine_tables(conn_string:, list: "", schema: nil)
+    def determine_tables(conn_string:, list: "", exclude_list: "", schema: nil)
       schema ||= "public"
+      
+      tables = convert_to_array(list)
+      exclude_tables = convert_to_array(exclude_list)
+      validate_table_lists(tables, exclude_tables, schema)
 
-      tables = list&.split(",") || []
-      if tables.size > 0
-        tables
+      if tables.empty?
+        all_tables = list_all_tables(schema: schema, conn_string: conn_string)
+        all_tables - (exclude_tables + %w[spatial_ref_sys])
       else
-        list_all_tables(schema: schema, conn_string: conn_string) - %w[ spatial_ref_sys ]
+        tables
       end
     end
 
@@ -100,6 +104,25 @@ module PgEasyReplicate
         )
         .map(&:values)
         .flatten
+    end
+
+    def convert_to_array(input)
+      input.is_a?(Array) ? input : input&.split(",") || []
+    end
+
+    def validate_table_lists(tables, exclude_tables, schema_name)
+      table_list = convert_to_array(tables)
+      exclude_table_list = convert_to_array(exclude_tables)
+
+      if !table_list.empty? && !exclude_table_list.empty?
+        abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
+      elsif !table_list.empty?
+        if table_list.size > 0 && (schema_name.nil? || schema_name == "")
+          abort_with("Schema name is required if tables are passed")
+        end
+      elsif exclude_table_list.size > 0 && (schema_name.nil? || schema_name == "")
+        abort_with("Schema name is required if exclude tables are passed")
+      end
     end
   end
 end
