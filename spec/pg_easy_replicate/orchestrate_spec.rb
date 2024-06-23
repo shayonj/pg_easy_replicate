@@ -73,10 +73,11 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     end
 
     it "succesfully for all tables" do
-      tables = described_class.determine_tables(
-        schema: test_schema,
-        conn_string: connection_url,
-      )
+      tables =
+        described_class.determine_tables(
+          schema: test_schema,
+          conn_string: connection_url,
+        )
 
       described_class.add_tables_to_publication(
         group_name: "cluster1",
@@ -560,6 +561,125 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         { last_analyze: nil, last_vacuum: nil, relname: "items" },
       )
     end
+
+    it "succesfully with exclude_tables" do
+      conn1 =
+        PgEasyReplicate::Query.connect(
+          connection_url: connection_url,
+          schema: test_schema,
+        )
+      conn1[:items].insert(name: "Foo1")
+      expect(conn1[:items].first[:name]).to eq("Foo1")
+
+      # Expect no item in target DB
+      conn2 =
+        PgEasyReplicate::Query.connect(
+          connection_url: target_connection_url,
+          schema: test_schema,
+        )
+      expect(conn2[:items].first).to be_nil
+
+      ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
+      described_class.start_sync(
+        group_name: "cluster1",
+        schema_name: test_schema,
+        exclude_tables: ["sellers"],
+        recreate_indices_post_copy: true,
+      )
+
+      expect(PgEasyReplicate::Group.find("cluster1")).to include(
+        switchover_completed_at: nil,
+        created_at: kind_of(Time),
+        name: "cluster1",
+        schema_name: "pger_test",
+        id: kind_of(Integer),
+        started_at: kind_of(Time),
+        updated_at: kind_of(Time),
+        failed_at: nil,
+        table_names: "items",
+        recreate_indices_post_copy: true,
+      )
+
+      conn1[:items].insert(name: "Foo2")
+
+      sleep 10
+
+      expect(conn1[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
+      expect(conn2[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
+
+      # Sequence check
+      expect(conn1.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
+        [{ last_value: 2 }],
+      )
+
+      # Expect sequence to not be updated on target DB
+      expect(conn2.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
+        [{ last_value: 1 }],
+      )
+
+      described_class.switchover(
+        group_name: "cluster1",
+        source_conn_string: connection_url,
+        target_conn_string: target_connection_url,
+      )
+
+      expect(PgEasyReplicate::Group.find("cluster1")).to include(
+        switchover_completed_at: kind_of(Time),
+        created_at: kind_of(Time),
+        name: "cluster1",
+        schema_name: "pger_test",
+        id: kind_of(Integer),
+        started_at: kind_of(Time),
+        updated_at: kind_of(Time),
+        failed_at: nil,
+        table_names: "items",
+      )
+
+      # Ensure index exists
+      result =
+        PgEasyReplicate::IndexManager.fetch_indices(
+          conn_string: target_connection_url,
+          tables: ["items"],
+          schema: test_schema,
+        )
+
+      expect(result).to eq(
+        [
+          {
+            table_name: "items",
+            index_name: "items_id_index",
+            index_definition:
+              "CREATE INDEX items_id_index ON pger_test.items USING btree (id)",
+          },
+          {
+            table_name: "items",
+            index_name: "items_seller_id_index",
+            index_definition:
+              "CREATE INDEX items_seller_id_index ON pger_test.items USING btree (seller_id)",
+          },
+        ],
+      )
+
+      # Expect sequence to be updated on target DB
+      expect(conn2.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
+        [{ last_value: 2 }],
+      )
+
+      # restore connection so cleanup can happen
+      described_class.restore_connections_on_source_db("cluster1")
+
+      expect(
+        vacuum_stats(url: target_connection_url, schema: test_schema),
+      ).to include(
+        {
+          last_analyze: kind_of(Time),
+          last_vacuum: kind_of(Time),
+          relname: "items",
+        },
+        { last_analyze: nil, last_vacuum: nil, relname: "sellers" },
+        { last_analyze: nil, last_vacuum: nil, relname: "spatial_ref_sys" },
+      )
+    end
   end
 
   # Note: Hard to test for special roles that act as superuser which aren't superuser, like rds_superuser
@@ -681,7 +801,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       # described_class.restore_connections_on_source_db("cluster1")
     end
   end
-  
+
   describe "excluding tables" do
     before do
       setup_tables
@@ -711,14 +831,15 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         table_names: "sellers",
       )
       expect(PgEasyReplicate::Group.find("cluster1")).not_to include(
-        table_names: "items"
+        table_names: "items",
       )
 
-      tables = described_class.determine_tables(
-        schema: test_schema,
-        conn_string: connection_url,
-        exclude_list: ["items"],
-      )
+      tables =
+        described_class.determine_tables(
+          schema: test_schema,
+          conn_string: connection_url,
+          exclude_list: ["items"],
+        )
 
       expect(tables).to include("sellers")
       expect(tables).not_to include("items")
@@ -736,10 +857,11 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         table_names: "items,sellers",
       )
 
-      tables = described_class.determine_tables(
-        schema: test_schema,
-        conn_string: connection_url,
-      )
+      tables =
+        described_class.determine_tables(
+          schema: test_schema,
+          conn_string: connection_url,
+        )
       expect(tables).to eq(%w[items sellers])
     end
   end
