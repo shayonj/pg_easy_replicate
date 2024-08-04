@@ -35,9 +35,11 @@ module PgEasyReplicate
     )
       abort_with("SOURCE_DB_URL is missing") if source_db_url.nil?
       abort_with("TARGET_DB_URL is missing") if target_db_url.nil?
-      
+
       if !tables.empty? && !exclude_tables.empty?
-        abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
+        abort_with(
+          "Options --tables(-t) and --exclude-tables(-e) cannot be used together.",
+        )
       end
 
       system("which pg_dump")
@@ -305,9 +307,9 @@ module PgEasyReplicate
       special_user_role: nil,
       grant_permissions_on_schema: false
     )
-      password = connection_info(conn_string)[:password].gsub("'") { "''" }
+      return if user_exists?(conn_string: conn_string, user: internal_user_name)
 
-      drop_user(conn_string: conn_string)
+      password = connection_info(conn_string)[:password].gsub("'") { "''" }
 
       sql = <<~SQL
         create role #{quote_ident(internal_user_name)} with password '#{password}' login createdb createrole;

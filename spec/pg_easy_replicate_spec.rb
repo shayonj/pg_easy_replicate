@@ -323,6 +323,43 @@ RSpec.describe(PgEasyReplicate) do
           )
         expect(conn.fetch("SELECT * FROM items").to_a).to eq([])
       end
+
+      it "is idempotent and doesn't provision groups and user again" do
+        described_class.bootstrap({ group_name: "cluster1" })
+
+        # Capture initial state
+        initial_schema = get_schema
+        initial_groups_table = groups_table_exists?
+        initial_source_user_permissions =
+          user_permissions(
+            connection_url: connection_url,
+            group_name: "cluster1",
+          )
+        initial_target_user_permissions =
+          user_permissions(
+            connection_url: target_connection_url,
+            group_name: "cluster1",
+          )
+
+        # Second bootstrap
+        described_class.bootstrap({ group_name: "cluster1" })
+
+        # Check that nothing has changed
+        expect(get_schema).to eq(initial_schema)
+        expect(groups_table_exists?).to eq(initial_groups_table)
+        expect(
+          user_permissions(
+            connection_url: connection_url,
+            group_name: "cluster1",
+          ),
+        ).to eq(initial_source_user_permissions)
+        expect(
+          user_permissions(
+            connection_url: target_connection_url,
+            group_name: "cluster1",
+          ),
+        ).to eq(initial_target_user_permissions)
+      end
     end
 
     describe ".cleanup" do
@@ -416,14 +453,25 @@ RSpec.describe(PgEasyReplicate) do
 
     describe ".excluding tables" do
       before { setup_tables }
-    
       after { teardown_tables }
 
       tables = "items"
-    
+
       it "returns error if tables and exclude_tables specified tables are both specified" do
-        expect { described_class.config(tables: tables, exclude_tables: tables, schema_name: test_schema) }.to raise_error(RuntimeError)
-        expect { described_class.assert_config(tables: tables, exclude_tables: tables, schema_name: test_schema) }.to raise_error(RuntimeError)
+        expect {
+          described_class.config(
+            tables: tables,
+            exclude_tables: tables,
+            schema_name: test_schema,
+          )
+        }.to raise_error(RuntimeError)
+        expect {
+          described_class.assert_config(
+            tables: tables,
+            exclude_tables: tables,
+            schema_name: test_schema,
+          )
+        }.to raise_error(RuntimeError)
       end
 
       it "doesnt return error if only exclude_tables specified tables are both specified" do
@@ -436,10 +484,19 @@ RSpec.describe(PgEasyReplicate) do
             tables_have_replica_identity: true,
           },
         )
-        expect { described_class.config(exclude_tables: tables, schema_name: test_schema) }.not_to raise_error
-        expect { described_class.assert_config(exclude_tables: tables, schema_name: test_schema) }.not_to raise_error
+        expect {
+          described_class.config(
+            exclude_tables: tables,
+            schema_name: test_schema,
+          )
+        }.not_to raise_error
+        expect {
+          described_class.assert_config(
+            exclude_tables: tables,
+            schema_name: test_schema,
+          )
+        }.not_to raise_error
       end
     end
-    
   end
 end
