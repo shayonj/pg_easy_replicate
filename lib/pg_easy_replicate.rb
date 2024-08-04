@@ -160,34 +160,58 @@ module PgEasyReplicate
     end
 
     def cleanup(options)
-      logger.info("Dropping groups table")
-      Group.drop
+      cleanup_steps = [
+        -> do
+          logger.info("Dropping groups table")
+          Group.drop
+        end,
+        -> do
+          if options[:everything]
+            logger.info("Dropping schema")
+            drop_internal_schema
+          end
+        end,
+        -> do
+          if options[:everything] || options[:sync]
+            logger.info("Dropping publication on source database")
+            Orchestrate.drop_publication(
+              group_name: options[:group_name],
+              conn_string: source_db_url,
+            )
+          end
+        end,
+        -> do
+          if options[:everything] || options[:sync]
+            logger.info("Dropping subscription on target database")
+            Orchestrate.drop_subscription(
+              group_name: options[:group_name],
+              target_conn_string: target_db_url,
+            )
+          end
+        end,
+        -> do
+          if options[:everything]
+            logger.info("Dropping replication user on source database")
+            drop_user(conn_string: source_db_url)
+          end
+        end,
+        -> do
+          if options[:everything]
+            logger.info("Dropping replication user on target database")
+            drop_user(conn_string: target_db_url)
+          end
+        end,
+      ]
 
-      if options[:everything]
-        logger.info("Dropping schema")
-        drop_internal_schema
-      end
-
-      if options[:everything] || options[:sync]
-        Orchestrate.drop_publication(
-          group_name: options[:group_name],
-          conn_string: source_db_url,
+      cleanup_steps.each do |step|
+        step.call
+      rescue => e
+        logger.warn(
+          "Part of the cleanup step failed with #{e.message}. Continuing...",
         )
-
-        Orchestrate.drop_subscription(
-          group_name: options[:group_name],
-          target_conn_string: target_db_url,
-        )
       end
 
-      if options[:everything]
-        # Drop users at last
-        logger.info("Dropping replication user on source database")
-        drop_user(conn_string: source_db_url)
-
-        logger.info("Dropping replication user on target database")
-        drop_user(conn_string: target_db_url)
-      end
+      logger.info("Cleanup process completed.")
     rescue => e
       abort_with("Unable to cleanup: #{e.message}")
     end
