@@ -9,6 +9,7 @@ services:
       POSTGRES_PASSWORD: james-bond123@7!'3aaR
       POSTGRES_DB: postgres-db
     command: >
+      -c max_connections=200
       -c wal_level=logical
       -c ssl=on
       -c ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
@@ -25,6 +26,7 @@ services:
       POSTGRES_PASSWORD: james-bond123@7!'3aaR
       POSTGRES_DB: postgres-db
     command: >
+      -c max_connections=200
       -c wal_level=logical
       -c ssl=on
       -c ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem

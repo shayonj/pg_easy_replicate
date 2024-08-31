@@ -237,4 +237,105 @@ module DatabaseHelpers
       "TARGET_DB_URL"
     ] = "postgres://james-bond:james-bond123%407%21%273aaR@localhost:5433/postgres-db"
   end
+
+  def table_exists?(*args)
+    if args.size == 1
+      table_name = args.first
+      schema = PgEasyReplicate::DDLAudit.send(:internal_schema_name)
+      conn_url = connection_url
+    elsif args.size == 3
+      conn_url, schema, table_name = args
+    else
+      raise ArgumentError,
+            "Wrong number of arguments (given #{args.size}, expected 1 or 3)"
+    end
+
+    PgEasyReplicate::Query.run(
+      query:
+        "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = '#{schema}' AND table_name = '#{table_name}') AS exists",
+      connection_url: conn_url,
+      schema: schema,
+      user: "james-bond",
+    ).first[
+      :exists
+    ]
+  end
+
+  def column_exists?(conn_url, schema, table, column)
+    PgEasyReplicate::Query.run(
+      query:
+        "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = '#{schema}' AND table_name = '#{table}' AND column_name = '#{column}') AS exists",
+      connection_url: conn_url,
+      schema: schema,
+      user: "james-bond",
+    ).first[
+      :exists
+    ]
+  end
+
+  def function_exists?(function_name, conn_url = connection_url)
+    PgEasyReplicate::Query.run(
+      query:
+        "SELECT EXISTS (SELECT 1 FROM pg_proc WHERE proname = '#{function_name}') AS exists",
+      connection_url: conn_url,
+      user: "james-bond",
+    ).first[
+      :exists
+    ]
+  end
+
+  def event_triggers_exist?(group_name, conn_url = nil)
+    conn_url ||= connection_url # Use the default connection_url if not provided
+    raise "No connection URL provided" if conn_url.nil?
+
+    PgEasyReplicate::Query.run(
+      query:
+        "SELECT COUNT(*) FROM pg_event_trigger WHERE evtname IN ('pger_ddl_trigger_#{group_name}', 'pger_drop_trigger_#{group_name}', 'pger_table_rewrite_trigger_#{group_name}')",
+      connection_url: conn_url,
+      schema: PgEasyReplicate::DDLAudit.send(:internal_schema_name),
+    ).first[
+      :count
+    ] == 3
+  end
+
+  def execute_ddl(query, conn_url = connection_url)
+    PgEasyReplicate::Query.run(
+      query: query,
+      connection_url: conn_url,
+      schema: test_schema,
+      user: "james-bond",
+    )
+  end
+
+  def ddl_audit_table_exists?(conn_url = nil, table_name = nil)
+    schema = PgEasyReplicate::DDLAudit.send(:internal_schema_name)
+    conn_url = connection_url if conn_url.nil? || conn_url.is_a?(Symbol)
+    table_name ||= "pger_ddl_audits"
+
+    PgEasyReplicate::Query.run(
+      query:
+        "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = '#{schema}' AND table_name = '#{table_name}') AS exists",
+      connection_url: conn_url,
+      schema: schema,
+      user: "james-bond",
+    ).first[
+      :exists
+    ]
+  end
+
+  def ddl_trigger_function_exists?(conn_url = connection_url)
+    function_exists?("pger_ddl_trigger", conn_url)
+  end
+
+  def table_exists_in_schema?(conn_url, schema, table_name)
+    PgEasyReplicate::Query.run(
+      query:
+        "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = '#{schema}' AND table_name = '#{table_name}') AS exists",
+      connection_url: conn_url,
+      schema: schema,
+      user: "james-bond",
+    ).first[
+      :exists
+    ]
+  end
 end

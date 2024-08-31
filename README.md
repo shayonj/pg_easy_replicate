@@ -69,11 +69,13 @@ All [Logical Replication Restrictions](https://www.postgresql.org/docs/current/l
 
 ## Usage
 
-Ensure `SOURCE_DB_URL` and `TARGET_DB_URL` are present as environment variables in the runtime environment. 
+Ensure `SOURCE_DB_URL` and `TARGET_DB_URL` are present as environment variables in the runtime environment.
+
 - `SOURCE_DB_URL` = The database that you want to replicate FROM.
 - `TARGET_DB_URL` = The database that you want to replicate TO.
 
 The URL should be in postgres connection string format. Example:
+
 ```bash
 $ export SOURCE_DB_URL="postgres://USERNAME:PASSWORD@localhost:5432/DATABASE_NAME"
 $ export TARGET_DB_URL="postgres://USERNAME:PASSWORD@localhost:5433/DATABASE_NAME"
@@ -174,10 +176,60 @@ Once the bootstrap is complete, you can start the sync. Starting the sync sets u
 **NOTE**: Start sync by default will drop all indices in the target database for performance reasons. And will automatically re-add the indices during `switchover`. It is turned on by default and you can opt out of this with `--no-recreate-indices-post-copy`
 
 ```bash
-$ pg_easy_replicate start_sync --group-name database-cluster-1
+$ pg_easy_replicate start_sync --group-name database-cluster-1 [-d <track-ddl>]
 
 {"name":"pg_easy_replicate","hostname":"PKHXQVK6DW","pid":22113,"level":30,"time":"2023-06-19T15:54:54.874-04:00","v":0,"msg":"Setting up publication","publication_name":"pger_publication_database_cluster_1","version":"0.1.0"}
 ...
+```
+
+### DDL Changes Management
+
+`pg_easy_replicate` now supports tracking and applying DDL (Data Definition Language) changes between the source and target databases. To track DDLs you can pass `-track-ddl` to `start_sync`.
+
+This feature ensures that most schema changes made to the source database tables that are being replicated during the replication process are tracked, so that you can apply them at your will before or after switchover.
+
+#### Listing DDL Changes
+
+To view the DDL changes that have been tracked:
+
+```bash
+$ pg_easy_replicate list_ddl_changes -g <group-name> [-l <limit>]
+```
+
+This command will display a list of DDL changes in JSON format;
+
+```
+[
+  {
+    "id": 1,
+    "group_name": "cluster-1",
+    "event_type": "ddl_command_end",
+    "object_type": "table",
+    "object_identity": "public.pgbench_accounts",
+    "ddl_command": "ALTER TABLE public.pgbench_accounts ADD COLUMN test_column VARCHAR(255)",
+    "created_at": "2024-08-31 15:42:33 UTC"
+  }
+]
+```
+
+#### Applying DDL Changes
+
+`pg_easy_replicate` won't automatically apply the changes for you. To apply the tracked DDL changes to the target database:
+
+```bash
+$ pg_easy_replicate apply_ddl_change -g <group-name> [-i <change-id>]
+```
+
+If you specify a change ID with the `-i` option, only that specific change will be applied. If you don't specify an ID, you'll be prompted to apply all pending changes.
+
+```bash
+$ pg_easy_replicate apply_ddl_change -g cluster-1
+The following DDL changes will be applied:
+ID: 1, Type: table, Command: ALTER TABLE public.pgbench_accounts ADD COLUMN test_column VARCHAR(255)...
+
+Do you want to apply all these changes? (y/n): y
+...
+All pending DDL changes applied successfully.
 ```
 
 ### Stats

@@ -15,7 +15,7 @@ module PgEasyReplicate
             schema: schema_name,
             conn_string: source_db_url,
             list: options[:tables],
-            exclude_list: options[:exclude_tables]
+            exclude_list: options[:exclude_tables],
           )
 
         if options[:recreate_indices_post_copy]
@@ -52,25 +52,19 @@ module PgEasyReplicate
           started_at: Time.now.utc,
           recreate_indices_post_copy: options[:recreate_indices_post_copy],
         )
-      rescue => e
-        stop_sync(
-          group_name: options[:group_name],
-          source_conn_string: source_db_url,
-          target_conn_string: target_db_url,
-        )
 
-        if Group.find(options[:group_name])
-          Group.update(group_name: options[:group_name], failed_at: Time.now)
-        else
-          Group.create(
-            name: options[:group_name],
-            table_names: tables.join(","),
-            schema_name: schema_name,
-            started_at: Time.now.utc,
-            failed_at: Time.now.utc,
+        if options[:track_ddl]
+          DDLManager.setup_ddl_tracking(
+            conn_string: source_db_url,
+            group_name: options[:group_name],
+            schema: schema_name,
           )
         end
-
+      rescue => e
+        stop_sync(group_name: options[:group_name])
+        if Group.find(options[:group_name])
+          Group.update(name: options[:group_name], failed_at: Time.now.utc)
+        end
         abort_with("Starting sync failed: #{e.message}")
       end
 
@@ -180,8 +174,8 @@ module PgEasyReplicate
 
       def stop_sync(
         group_name:,
-        source_conn_string: source_db_url,
-        target_conn_string: target_db_url
+        source_conn_string: nil,
+        target_conn_string: nil
       )
         logger.info(
           "Stopping sync",
@@ -192,29 +186,34 @@ module PgEasyReplicate
         )
         drop_publication(
           group_name: group_name,
-          conn_string: source_conn_string,
+          conn_string: source_conn_string || source_db_url,
         )
         drop_subscription(
           group_name: group_name,
-          target_conn_string: target_conn_string,
+          target_conn_string: target_conn_string || target_db_url,
         )
       rescue => e
-        raise "Unable to stop sync user: #{e.message}"
+        abort_with("Unable to stop sync: #{e.message}")
       end
 
       def switchover(
         group_name:,
-        source_conn_string: source_db_url,
-        target_conn_string: target_db_url,
         lag_delta_size: nil,
-        skip_vacuum_analyze: false
+        skip_vacuum_analyze: false,
+        source_conn_string: nil,
+        target_conn_string: nil
       )
         group = Group.find(group_name)
+        abort_with("Group not found: #{group_name}") unless group
+
         tables_list = group[:table_names].split(",")
+
+        source_conn = source_conn_string || source_db_url
+        target_conn = target_conn_string || target_db_url
 
         unless skip_vacuum_analyze
           run_vacuum_analyze(
-            conn_string: target_conn_string,
+            conn_string: target_conn,
             tables: tables_list,
             schema: group[:schema_name],
           )
@@ -225,39 +224,35 @@ module PgEasyReplicate
         if group[:recreate_indices_post_copy]
           IndexManager.wait_for_replication_completion(group_name: group_name)
           IndexManager.recreate_indices(
-            source_conn_string: source_db_url,
-            target_conn_string: target_db_url,
+            source_conn_string: source_conn,
+            target_conn_string: target_conn,
             tables: tables_list,
             schema: group[:schema_name],
           )
         end
 
-        # Watch for lag again, because it could've grown during index recreation
         watch_lag(group_name: group_name, lag: lag_delta_size || DEFAULT_LAG)
 
         revoke_connections_on_source_db(group_name)
         wait_for_remaining_catchup(group_name)
-        refresh_sequences(
-          conn_string: target_conn_string,
-          schema: group[:schema_name],
-        )
+        refresh_sequences(conn_string: target_conn, schema: group[:schema_name])
         mark_switchover_complete(group_name)
-        # Run vacuum analyze to refresh the planner post switchover
+
         unless skip_vacuum_analyze
           run_vacuum_analyze(
-            conn_string: target_conn_string,
+            conn_string: target_conn,
             tables: tables_list,
             schema: group[:schema_name],
           )
         end
+
         drop_subscription(
           group_name: group_name,
-          target_conn_string: target_conn_string,
+          target_conn_string: target_conn,
         )
       rescue => e
         restore_connections_on_source_db(group_name)
-
-        abort_with("Switchover sync failed: #{e.message}")
+        abort_with("Switchover failed: #{e.message}")
       end
 
       def watch_lag(group_name:, wait_time: DEFAULT_WAIT, lag: DEFAULT_LAG)

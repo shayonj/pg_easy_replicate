@@ -6,6 +6,7 @@ require "pg"
 require "sequel"
 require "open3"
 require "English"
+require "pg_query"
 
 require "pg_easy_replicate/helper"
 require "pg_easy_replicate/version"
@@ -15,6 +16,8 @@ require "pg_easy_replicate/orchestrate"
 require "pg_easy_replicate/stats"
 require "pg_easy_replicate/group"
 require "pg_easy_replicate/cli"
+require "pg_easy_replicate/ddl_audit"
+require "pg_easy_replicate/ddl_manager"
 
 Sequel.default_timezone = :utc
 module PgEasyReplicate
@@ -199,6 +202,14 @@ module PgEasyReplicate
           if options[:everything]
             logger.info("Dropping replication user on target database")
             drop_user(conn_string: target_db_url)
+          end
+          -> do
+            if options[:everything]
+              PgEasyReplicate::DDLManager.cleanup_ddl_tracking(
+                conn_string: source_db_url,
+                group_name: options[:group_name],
+              )
+            end
           end
         end,
       ]

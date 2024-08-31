@@ -236,7 +236,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       teardown_tables
     end
 
-    it "succesfully" do
+    it "successfully" do
       ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
       described_class.start_sync(
         group_name: "cluster1",
@@ -273,7 +273,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       )
     end
 
-    it "fails succesfully" do
+    it "fails successfully" do
       allow(PgEasyReplicate::Orchestrate).to receive(
         :create_subscription,
       ).and_raise("boo")
@@ -291,17 +291,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       expect(pg_subscriptions(connection_url: target_connection_url)).to eq([])
 
-      expect(PgEasyReplicate::Group.find("cluster1")).to include(
-        switchover_completed_at: nil,
-        created_at: kind_of(Time),
-        name: "cluster1",
-        schema_name: "pger_test",
-        id: kind_of(Integer),
-        started_at: kind_of(Time),
-        updated_at: kind_of(Time),
-        failed_at: kind_of(Time),
-        table_names: "items,sellers",
-      )
+      expect(PgEasyReplicate::Group.find("cluster1")).to be_nil
     end
   end
 
@@ -328,7 +318,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       teardown_tables
     end
 
-    it "succesfully" do
+    it "successfully" do
       expect(
         vacuum_stats(url: target_connection_url, schema: test_schema),
       ).to include(
@@ -380,7 +370,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
     end
 
-    it "succesfully" do
+    it "successfully" do
       conn1 =
         PgEasyReplicate::Query.connect(
           connection_url: connection_url,
@@ -513,7 +503,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       )
     end
 
-    it "succesfully with no vacuum and analyze" do
+    it "successfully with no vacuum and analyze" do
       conn1 =
         PgEasyReplicate::Query.connect(
           connection_url: connection_url,
@@ -562,7 +552,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       )
     end
 
-    it "succesfully with exclude_tables" do
+    it "successfully with exclude_tables" do
       conn1 =
         PgEasyReplicate::Query.connect(
           connection_url: connection_url,

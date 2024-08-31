@@ -49,7 +49,7 @@ jobs:
         run: bundle exec rubocop
       # - name: Setup upterm session
       #   uses: lhotari/action-upterm@v1
-      - name: "Setug PG databases"
+      - name: "Setup PG databases"
         run: |
           set -euvxo pipefail
 
@@ -91,6 +91,17 @@ jobs:
 
           psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'show wal_level;'
           psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'show wal_level;'
+
+          sudo -u postgres psql -p 5432 -c "ALTER SYSTEM SET max_connections = '500';"
+          sudo -u postgres psql -p 5433 -c "ALTER SYSTEM SET max_connections = '500';"
+
+          sudo systemctl restart postgresql@${{ matrix.pg.from }}-main.service
+          sudo systemctl restart postgresql@${{ matrix.pg.to }}-main.service
+          sudo systemctl restart postgresql
+
+          # Verify the changes
+          psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'SHOW max_connections;'
+          psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'SHOW max_connections;'
 
       - name: Run RSpec
         run: bundle exec rspec
