@@ -113,7 +113,8 @@ module PgEasyReplicate
         sanitized_group_name = sanitize_identifier(group_name)
 
         full_table_names = tables.map { |table| "#{schema_name}.#{table}" }
-        puts "full_table_names: #{full_table_names}"
+        table_pattern = full_table_names.join("|")
+
         conn.run(<<~SQL)
           CREATE OR REPLACE FUNCTION #{internal_schema_name}.pger_ddl_trigger_#{sanitized_group_name}() RETURNS event_trigger AS $$
           DECLARE
@@ -126,12 +127,12 @@ module PgEasyReplicate
             IF TG_EVENT = 'ddl_command_end' THEN
               FOR obj IN SELECT * FROM pg_event_trigger_ddl_commands()
               LOOP
-                IF obj.object_type = 'table' AND obj.object_identity = ANY(ARRAY['#{full_table_names.join("','")}']) THEN
+                IF obj.object_identity ~ '^(#{table_pattern})' THEN
                   INSERT INTO #{internal_schema_name}.#{table_name} (group_name, event_type, object_type, object_identity, ddl_command)
                   VALUES ('#{group_name}', TG_EVENT, obj.object_type, obj.object_identity, ddl_command);
                 ELSIF obj.object_type = 'index' THEN
                   SELECT (regexp_match(ddl_command, 'ON\\s+(\\S+)'))[1] INTO affected_table;
-                  IF affected_table = ANY(ARRAY['#{full_table_names.join("','")}']) THEN
+                  IF affected_table IN ('#{full_table_names.join("','")}') THEN
                     INSERT INTO #{internal_schema_name}.#{table_name} (group_name, event_type, object_type, object_identity, ddl_command)
                     VALUES ('#{group_name}', TG_EVENT, obj.object_type, obj.object_identity, ddl_command);
                   END IF;
@@ -140,8 +141,7 @@ module PgEasyReplicate
             ELSIF TG_EVENT = 'sql_drop' THEN
               FOR obj IN SELECT * FROM pg_event_trigger_dropped_objects()
               LOOP
-                IF obj.object_type IN ('table', 'index') AND
-                   (obj.object_identity = ANY(ARRAY['#{full_table_names.join("','")}']) OR
+                IF (obj.object_identity = ANY(ARRAY['#{full_table_names.join("','")}']) OR
                     obj.object_identity ~ ('^' || '#{schema_name}' || '\\.(.*?)_.*$'))
                 THEN
                   INSERT INTO #{internal_schema_name}.#{table_name} (group_name, event_type, object_type, object_identity, ddl_command)
@@ -151,9 +151,14 @@ module PgEasyReplicate
             ELSIF TG_EVENT = 'table_rewrite' THEN
               FOR obj IN SELECT * FROM pg_event_trigger_table_rewrite_oid()
               LOOP
-                IF obj.oid::regclass::text = ANY(ARRAY['#{full_table_names.join("','")}']) THEN
+                SELECT c.relname, n.nspname INTO affected_table
+                FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE c.oid = obj.oid;
+
+                IF affected_table IN ('#{full_table_names.join("','")}') THEN
                   INSERT INTO #{internal_schema_name}.#{table_name} (group_name, event_type, object_type, object_identity, ddl_command)
-                  VALUES ('#{group_name}', TG_EVENT, 'table', obj.oid::regclass::text, ddl_command);
+                  VALUES ('#{group_name}', TG_EVENT, 'table', affected_table, 'table_rewrite');
                 END IF;
               END LOOP;
             END IF;

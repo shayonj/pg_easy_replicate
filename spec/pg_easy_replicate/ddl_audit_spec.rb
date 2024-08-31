@@ -129,6 +129,7 @@ RSpec.describe(PgEasyReplicate::DDLAudit) do
       execute_ddl("DROP INDEX #{schema_name}.idx_sellers_name")
 
       changes = described_class.list_changes(group_name)
+
       expect(changes.size).to eq(2)
 
       create_index_change =
@@ -154,6 +155,44 @@ RSpec.describe(PgEasyReplicate::DDLAudit) do
         "#{schema_name}.idx_sellers_name",
       )
       expect(drop_index_change[:ddl_command]).to include("DROP INDEX")
+    end
+
+    it "captures ALTER TABLE DDL for adding and renaming a column" do
+      execute_ddl(
+        "ALTER TABLE #{schema_name}.sellers ADD COLUMN temp_email VARCHAR(255)",
+      )
+      execute_ddl(
+        "ALTER TABLE #{schema_name}.sellers RENAME COLUMN temp_email TO permanent_email",
+      )
+
+      changes = described_class.list_changes(group_name)
+
+      expect(changes.size).to eq(2)
+
+      sorted_changes = changes.sort_by { |change| change[:created_at] }
+
+      add_column_change = sorted_changes[0]
+      rename_column_change = sorted_changes[1]
+
+      expect(add_column_change[:event_type]).to eq("ddl_command_end")
+      expect(add_column_change[:object_type]).to eq("table")
+      expect(add_column_change[:object_identity]).to eq(
+        "#{schema_name}.sellers",
+      )
+      expect(add_column_change[:ddl_command]).to include("ALTER TABLE")
+      expect(add_column_change[:ddl_command]).to include(
+        "ADD COLUMN temp_email",
+      )
+
+      expect(rename_column_change[:event_type]).to eq("ddl_command_end")
+      expect(rename_column_change[:object_type]).to eq("table column")
+      expect(rename_column_change[:object_identity]).to eq(
+        "#{schema_name}.sellers.permanent_email",
+      )
+      expect(rename_column_change[:ddl_command]).to include("ALTER TABLE")
+      expect(rename_column_change[:ddl_command]).to include(
+        "RENAME COLUMN temp_email TO permanent_email",
+      )
     end
   end
 
