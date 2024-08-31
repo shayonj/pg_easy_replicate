@@ -4,6 +4,7 @@ PATH
     pg_easy_replicate (0.2.7)
       ougai (~> 2.0.0)
       pg (~> 1.5.3)
+      pg_query (~> 5.1.0)
       sequel (>= 5.69, < 5.83)
       thor (>= 1.2.2, < 1.4.0)
 
@@ -14,6 +15,12 @@ GEM
     bigdecimal (3.1.8)
     coderay (1.1.3)
     diff-lcs (1.5.1)
+    google-protobuf (4.28.0-arm64-darwin)
+      bigdecimal
+      rake (>= 13)
+    google-protobuf (4.28.0-x86_64-linux)
+      bigdecimal
+      rake (>= 13)
     haml (6.1.1)
       temple (>= 0.8.2)
       thor
@@ -29,6 +36,8 @@ GEM
       ast (~> 2.4.1)
       racc
     pg (1.5.7)
+    pg_query (5.1.0)
+      google-protobuf (>= 3.22.3)
     prettier_print (1.2.1)
     pry (0.14.2)
       coderay (~> 1.1)

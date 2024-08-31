@@ -2,7 +2,7 @@
 
 RSpec.describe("SmokeSpec") do
   describe "dataset" do
-    it "matches after switchover" do
+    it "matches after switchover and applies DDL changes" do
       # Bootstrap
       system("./scripts/e2e-bootstrap.sh")
       expect($CHILD_STATUS.success?).to be(true)
@@ -22,8 +22,8 @@ RSpec.describe("SmokeSpec") do
           3000.times do |i|
             new_aid = last_count + (i + 1)
             sql = <<~SQL
-              INSERT INTO "public"."pgbench_accounts"("aid", "bid", "abalance", "filler") VALUES(#{new_aid}, 1, 0, '0') RETURNING "aid", "bid", "abalance", "filler";
-            SQL
+            INSERT INTO "public"."pgbench_accounts"("aid", "bid", "abalance", "filler") VALUES(#{new_aid}, 1, 0, '0') RETURNING "aid", "bid", "abalance", "filler";
+          SQL
             PgEasyReplicate::Query.run(
               query: sql,
               connection_url: connection_url,
@@ -60,6 +60,16 @@ RSpec.describe("SmokeSpec") do
           user: "james-bond",
         )
       expect(r).to eq([{ count: 503_000 }])
+
+      columns =
+        PgEasyReplicate::Query.run(
+          query:
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'pgbench_accounts' AND column_name = 'test_column'",
+          connection_url: target_connection_url,
+          user: "james-bond",
+        )
+      expect(columns).to eq([{ column_name: "test_column" }])
+
       expect(
         vacuum_stats(url: target_connection_url, schema: "public"),
       ).to include(

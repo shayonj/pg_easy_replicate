@@ -54,6 +54,11 @@ module PgEasyReplicate
                   aliases: "-c",
                   boolean: true,
                   desc: "Copy schema to the new database"
+    method_option :track_ddl,
+                  aliases: "-d",
+                  type: :boolean,
+                  default: false,
+                  desc: "Enable DDL tracking for the group"
     desc "bootstrap",
          "Sets up temporary tables for information required during runtime"
     def bootstrap
@@ -83,11 +88,6 @@ module PgEasyReplicate
                   aliases: "-g",
                   required: true,
                   desc: "Name of the group to provision"
-    method_option :group_name,
-                  aliases: "-g",
-                  required: true,
-                  desc:
-                    "Name of the grouping for this collection of source and target DB"
     method_option :schema_name,
                   aliases: "-s",
                   desc:
@@ -104,10 +104,14 @@ module PgEasyReplicate
                     "Comma separated list of table names to exclude. Default: None"
     method_option :recreate_indices_post_copy,
                   type: :boolean,
-                  default: true,
+                  default: false,
                   aliases: "-r",
                   desc:
                     "Drop all non-primary indices before copy and recreate them post-copy"
+    method_option :track_ddl,
+                  type: :boolean,
+                  default: false,
+                  desc: "Enable DDL tracking for the group"
     def start_sync
       PgEasyReplicate::Orchestrate.start_sync(options)
     end
@@ -122,7 +126,7 @@ module PgEasyReplicate
       PgEasyReplicate::Orchestrate.stop_sync(group_name: options[:group_name])
     end
 
-    desc "switchover ",
+    desc "switchover",
          "Puts the source database in read only mode after all the data is flushed and written"
     method_option :group_name,
                   aliases: "-g",
@@ -130,21 +134,18 @@ module PgEasyReplicate
                   desc: "Name of the group previously provisioned"
     method_option :lag_delta_size,
                   aliases: "-l",
-                  desc: "The size of the lag to watch for before switchover. Default 200KB."
+                  desc:
+                    "The size of the lag to watch for before switchover. Default 200KB."
     method_option :skip_vacuum_analyze,
                   type: :boolean,
                   default: false,
                   aliases: "-s",
                   desc: "Skip vacuum analyzing tables before switchover."
-    # method_option :bi_directional,
-    #               aliases: "-b",
-    #               desc:
-    #                 "Setup replication from target database to source database"
     def switchover
       PgEasyReplicate::Orchestrate.switchover(
         group_name: options[:group_name],
         lag_delta_size: options[:lag_delta_size],
-        skip_vacuum_analyze: options[:skip_vacuum_analyze]
+        skip_vacuum_analyze: options[:skip_vacuum_analyze],
       )
     end
 
@@ -159,6 +160,71 @@ module PgEasyReplicate
         PgEasyReplicate::Stats.follow(options[:group_name])
       else
         PgEasyReplicate::Stats.print(options[:group_name])
+      end
+    end
+
+    desc "list_ddl_changes", "Lists recent DDL changes in the source database"
+    method_option :group_name,
+                  aliases: "-g",
+                  required: true,
+                  desc: "Name of the group"
+    method_option :limit,
+                  aliases: "-l",
+                  type: :numeric,
+                  default: 100,
+                  desc: "Limit the number of DDL changes to display"
+    def list_ddl_changes
+      changes =
+        PgEasyReplicate::DDLManager.list_ddl_changes(
+          group_name: options[:group_name],
+          limit: options[:limit],
+        )
+      puts JSON.pretty_generate(changes)
+    end
+
+    desc "apply_ddl_change", "Applies DDL changes to the target database"
+    method_option :group_name,
+                  aliases: "-g",
+                  required: true,
+                  desc: "Name of the group"
+    method_option :id,
+                  aliases: "-i",
+                  type: :numeric,
+                  desc:
+                    "ID of the specific DDL change to apply. If not provided, all changes will be applied."
+    def apply_ddl_change
+      if options[:id]
+        PgEasyReplicate::DDLManager.apply_ddl_change(
+          group_name: options[:group_name],
+          id: options[:id],
+        )
+        puts "DDL change with ID #{options[:id]} applied successfully."
+      else
+        changes =
+          PgEasyReplicate::DDLManager.list_ddl_changes(
+            group_name: options[:group_name],
+          )
+        if changes.empty?
+          puts "No pending DDL changes to apply."
+          return
+        end
+
+        puts "The following DDL changes will be applied:"
+        changes.each do |change|
+          puts "ID: #{change[:id]}, Type: #{change[:object_type]}, Command: #{change[:ddl_command]}"
+        end
+        puts ""
+        print("Do you want to apply all these changes? (y/n): ")
+        confirmation = $stdin.gets.chomp.downcase
+
+        if confirmation == "y"
+          PgEasyReplicate::DDLManager.apply_all_ddl_changes(
+            group_name: options[:group_name],
+          )
+          puts "All pending DDL changes applied successfully."
+        else
+          puts "Operation cancelled."
+        end
       end
     end
 
