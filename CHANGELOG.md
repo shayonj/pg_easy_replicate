@@ -1,3 +1,12 @@
+## [0.3.2] - 2024-08-31
+
+- DDL: Support table column rename - #157
+
+## [0.3.0] - 2024-08-31
+
+- Support DDL Tracking by - #155
+  - `recreate-indices-post-copy` now defaults to `false`
+
 ## [0.2.6] - 2024-06-04
 
 - Quote table name in the VACUUM SQL - #118
