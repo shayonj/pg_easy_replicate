@@ -39,6 +39,28 @@ module PgEasyReplicate
         end
       end
 
+      def notify(group_name, url, timeout = 10)
+        loop do
+          stats = object(group_name)
+          uri = URI.parse(webhook_url)
+
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = (uri.scheme == "https")
+
+          request = Net::HTTP::Post.new(uri.request_uri)
+          request.content_type = "application/json"
+          request.body = stats.to_json
+
+          response = http.request(request)
+
+          puts "Notification sent: #{response.code} #{response.message}"
+
+          sleep(timeout)
+        end
+      rescue StandardError => e
+        puts "An error occurred: #{e.message}"
+      end
+
       # Get
       def lag_stats(group_name)
         sql = <<~SQL
