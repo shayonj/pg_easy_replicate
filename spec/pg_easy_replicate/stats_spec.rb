@@ -229,4 +229,37 @@ RSpec.describe(PgEasyReplicate::Stats) do
       )
     end
   end
+
+  describe ".notify" do
+    @group_name = "cluster1"
+    @url = "https://example.com/webhook"
+    @timeout = 5
+    @mock_stats = {
+      lag_stats: [],
+      replication_slots: [],
+      replication_stats: [],
+      replication_stats_count_by_state: {},
+      message_lsn_receipts: [],
+      sync_started_at: Time.now,
+      sync_failed_at: nil,
+      switchover_completed_at: nil,
+    }
+  
+    before do
+      allow(described_class).to receive(:object).with(@group_name).and_return(@mock_stats)
+      stub_request(:post, @url).to_return(status: 200, body: "OK")
+    end
+  
+    it "sends notification with correct stats data" do
+      expect { described_class.notify(@group_name, @url, @timeout) }
+        .to output(/Notification sent: 200 OK/).to_stdout
+    end
+  
+    it "retries on failure" do
+      allow(Net::HTTP).to receive(:new).and_raise(StandardError.new("network error"))
+  
+      expect { described_class.notify(@group_name, @url, @timeout) }
+        .to output(/An error occurred: network error/).to_stdout
+    end
+  end
 end
