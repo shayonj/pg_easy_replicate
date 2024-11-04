@@ -26,6 +26,7 @@ Battle tested in production at [Tines](https://www.tines.com/) 🚀
     - [Listing DDL Changes](#listing-ddl-changes)
     - [Applying DDL Changes](#applying-ddl-changes)
   - [Stats](#stats)
+  - [Notify](#notify)
   - [Performing switchover](#performing-switchover)
 - [Replicating single database with custom tables](#replicating-single-database-with-custom-tables)
 - [Exclude tables from replication](#exclude-tables-from-replication)
@@ -120,6 +121,7 @@ pg_easy_replicate commands:
   pg_easy_replicate help [COMMAND]                           # Describe available commands or one specific command
   pg_easy_replicate start_sync -g, --group-name=GROUP_NAME   # Starts the logical replication from source database to target database provisioned in the group
   pg_easy_replicate stats  -g, --group-name=GROUP_NAME       # Prints the statistics in JSON for the group
+  pg_easy_replicate notify  -g, --group-name=GROUP_NAME,  -u --url=URL_TO_NOTIFY    # Sends notifications of all stats values for a group to a specified url
   pg_easy_replicate stop_sync -g, --group-name=GROUP_NAME    # Stop the logical replication from source database to target database provisioned in the group
   pg_easy_replicate switchover  -g, --group-name=GROUP_NAME  # Puts the source database in read only mode after all the data is flushed and written
   pg_easy_replicate version                                  # Prints the version
@@ -274,6 +276,14 @@ $ pg_easy_replicate stats --group-name database-cluster-1
   "switchover_completed_at": null
 
   ....
+```
+
+### Notify
+
+You can send stats to an endpoint on an interval using notify. This can be configured to receieve the stats to this url on a frequency (default 10s). A timeout can also be configured for the request to the endpoint (default 10s). This gives you greater control over processing different events in the replication cycle in your workflow.
+
+```bash
+$ pg_easy_replicate notify --group-name database-cluster-1 --url https://example.com/webhook --frequency 10 --timeout 10
 ```
 
 ### Performing switchover

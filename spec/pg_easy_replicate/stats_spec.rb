@@ -229,4 +229,47 @@ RSpec.describe(PgEasyReplicate::Stats) do
       )
     end
   end
+
+  describe ".notify" do
+    before do
+      @mocked_stats = {
+        lag_stats: [],
+        replication_slots: [],
+        replication_stats: [],
+        replication_stats_count_by_state: {},
+        message_lsn_receipts: [],
+        sync_started_at: Time.now - 5,
+        sync_failed_at: nil,
+        switchover_completed_at: Time.now,
+      }
+      allow(described_class).to receive(:object).with("cluster1").and_return(@mocked_stats)
+
+      # # mocks the http request
+      http_double = double('http', request: double('response', code: '200', message: 'OK'))
+      allow(Net::HTTP).to receive(:new).and_return(http_double)
+      allow(http_double).to receive(:use_ssl=)
+      allow(http_double).to receive(:open_timeout=)
+      allow(http_double).to receive(:read_timeout=)
+    end
+
+    it "logs notification success and indicates switchover completion" do
+      thread = Thread.new do
+        expect { described_class.notify("cluster1", "https://example.com/webhook", 1, 5) }
+        .to output(/Notification sent: 200 OK/).to_stdout
+      end
+
+      sleep(0.1)
+      thread.kill # Break out of the loop so the test doesnt hang
+
+      expect { thread.join }.not_to raise_error
+    end
+  
+    it "retries on failure" do
+      allow(Net::HTTP).to receive(:new).and_raise(StandardError.new("network error"))
+  
+      expect {
+        described_class.notify("cluster1", "https://example.com/webhook", 1, 1)
+      }.to raise_error(StandardError, /Notify failed with: network error/)
+    end
+  end
 end

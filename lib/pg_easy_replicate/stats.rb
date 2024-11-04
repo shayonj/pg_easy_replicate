@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "net/http"
+
 module PgEasyReplicate
   class Stats
     REPLICATION_STATE_MAP = {
@@ -37,6 +39,30 @@ module PgEasyReplicate
           print(group_name)
           sleep(1)
         end
+      end
+
+      def notify(group_name, url, frequency = 10, timeout = 10)
+        loop do
+          stats = object(group_name)
+          uri = URI.parse(url)
+
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = (uri.scheme == "https")
+          http.open_timeout = timeout
+          http.read_timeout = timeout
+
+          request = Net::HTTP::Post.new(uri.request_uri)
+          request.content_type = "application/json"
+          request.body = stats.to_json
+
+          response = http.request(request)
+
+          puts "Notification sent: #{response.code} #{response.message}"
+
+          sleep(frequency)
+        end
+      rescue StandardError => e
+        abort_with("Notify failed with: #{e.message}")
       end
 
       # Get
