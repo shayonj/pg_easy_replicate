@@ -59,16 +59,10 @@ module PgEasyReplicate
 
           puts "Notification sent: #{response.code} #{response.message}"
 
-          # Check if switchover has been completed, and if so, exit after this notification
-          if stats[:switchover_completed_at]
-            puts "Switchover completed at #{stats[:switchover_completed_at]}. Stopping notifications."
-            break
-          end
-
           sleep(frequency)
         end
       rescue StandardError => e
-        puts "An error occurred: #{e.message}"
+        abort_with("Notify failed with: #{e.message}")
       end
 
       # Get

@@ -282,8 +282,6 @@ $ pg_easy_replicate stats --group-name database-cluster-1
 
 You can send stats to an endpoint on an interval using notify. This can be configured to receieve the stats to this url on a frequency (default 10s). A timeout can also be configured for the request to the endpoint (default 10s). This gives you greater control over processing different events in the replication cycle in your workflow.
 
-Once the stats is populated with a value for `switchover_completed_at` the requests will automatically stop sending to the endpoint.
-
 ```bash
 $ pg_easy_replicate notify --group-name database-cluster-1 --url https://example.com/webhook --frequency 10 --timeout 10
 ```
