@@ -163,7 +163,7 @@ module PgEasyReplicate
       end
     end
 
-    desc "notify", "Sends a notification with replication status to a specified webhook"
+    desc "notify", "Sends a notification with replication status to a specified url"
     method_option :group_name, aliases: "-g", required: true, desc: "Name of the group previously provisioned"
     method_option :url, aliases: "-u", required: true, desc: "URL for notification"
     method_option :frequency, aliases: "-f", type: :numeric, default: 10, desc: "Frequency for sending stats to the endpoint provided"
