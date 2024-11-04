@@ -173,7 +173,6 @@ module PgEasyReplicate
       PgEasyReplicate::Stats.notify(options[:group_name], options[:url], options[:frequency], options[:timeout])
     end
 
-
     desc "list_ddl_changes", "Lists recent DDL changes in the source database"
     method_option :group_name,
                   aliases: "-g",
