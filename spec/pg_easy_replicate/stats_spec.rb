@@ -231,34 +231,36 @@ RSpec.describe(PgEasyReplicate::Stats) do
   end
 
   describe ".notify" do
-    @group_name = "cluster1"
-    @url = "https://example.com/webhook"
-    @timeout = 5
-    @mock_stats = {
-      lag_stats: [],
-      replication_slots: [],
-      replication_stats: [],
-      replication_stats_count_by_state: {},
-      message_lsn_receipts: [],
-      sync_started_at: Time.now,
-      sync_failed_at: nil,
-      switchover_completed_at: nil,
-    }
-  
     before do
-      allow(described_class).to receive(:object).with(@group_name).and_return(@mock_stats)
-      stub_request(:post, @url).to_return(status: 200, body: "OK")
+      @mocked_stats = {
+        lag_stats: [],
+        replication_slots: [],
+        replication_stats: [],
+        replication_stats_count_by_state: {},
+        message_lsn_receipts: [],
+        sync_started_at: Time.now - 5,
+        sync_failed_at: nil,
+        switchover_completed_at: Time.now,
+      }
+      allow(described_class).to receive(:object).with("cluster1").and_return(@mocked_stats)
+
+      # mocks the http request
+      http_double = double('http', request: double('response', code: '200', message: 'OK'))
+      allow(Net::HTTP).to receive(:new).and_return(http_double)
+      allow(http_double).to receive(:use_ssl=)
+      allow(http_double).to receive(:open_timeout=)
+      allow(http_double).to receive(:read_timeout=)
     end
-  
-    it "sends notification with correct stats data" do
-      expect { described_class.notify(@group_name, @url, @timeout) }
-        .to output(/Notification sent: 200 OK/).to_stdout
+
+    it "logs notification success and indicates switchover completion" do
+      expect { described_class.notify("cluster1", "https://example.com/webhook", 1, 5) }.to output(/Notification sent: 200 OK/).to_stdout
+      expect { described_class.notify("cluster1", "https://example.com/webhook", 1, 5) }.to output(/Switchover completed at/).to_stdout
     end
   
     it "retries on failure" do
       allow(Net::HTTP).to receive(:new).and_raise(StandardError.new("network error"))
   
-      expect { described_class.notify(@group_name, @url, @timeout) }
+      expect { described_class.notify("cluster1", "https://example.com/webhook", 1, 5) }
         .to output(/An error occurred: network error/).to_stdout
     end
   end

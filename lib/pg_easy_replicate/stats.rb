@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "net/http"
+
 module PgEasyReplicate
   class Stats
     REPLICATION_STATE_MAP = {
@@ -39,13 +41,15 @@ module PgEasyReplicate
         end
       end
 
-      def notify(group_name, url, timeout = 10)
+      def notify(group_name, url, frequency = 10, timeout = 10)
         loop do
           stats = object(group_name)
-          uri = URI.parse(webhook_url)
+          uri = URI.parse(url)
 
           http = Net::HTTP.new(uri.host, uri.port)
           http.use_ssl = (uri.scheme == "https")
+          http.open_timeout = timeout
+          http.read_timeout = timeout
 
           request = Net::HTTP::Post.new(uri.request_uri)
           request.content_type = "application/json"
@@ -55,7 +59,13 @@ module PgEasyReplicate
 
           puts "Notification sent: #{response.code} #{response.message}"
 
-          sleep(timeout)
+          # Check if switchover has been completed, and if so, exit after this notification
+          if stats[:switchover_completed_at]
+            puts "Switchover completed at #{stats[:switchover_completed_at]}. Stopping notifications."
+            break
+          end
+
+          sleep(frequency)
         end
       rescue StandardError => e
         puts "An error occurred: #{e.message}"

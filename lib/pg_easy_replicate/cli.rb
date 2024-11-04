@@ -166,10 +166,11 @@ module PgEasyReplicate
     desc "notify", "Sends a notification with replication status to a specified webhook"
     method_option :group_name, aliases: "-g", required: true, desc: "Name of the group previously provisioned"
     method_option :url, aliases: "-u", required: true, desc: "URL for notification"
+    method_option :frequency, aliases: "-f", type: :numeric, default: 10, desc: "Frequency for sending stats to the endpoint provided"
     method_option :timeout, aliases: "-t", type: :numeric, default: 10, desc: "Timeout for the notify request"
 
     def notify
-      PgEasyReplicate::Stats.notify(options[:group_name], options[:url], options[:timeout])
+      PgEasyReplicate::Stats.notify(options[:group_name], options[:url], options[:frequency], options[:timeout])
     end
 
 
