@@ -28,7 +28,7 @@ module PgEasyReplicate
           if using_vacuum_analyze
             conn.run("SET statement_timeout=0")
           else
-            conn.run("SET statement_timeout to '5s'")
+            conn.run("SET statement_timeout to '#{timeout}'")
           end
           r = conn.fetch(query).to_a
         end
