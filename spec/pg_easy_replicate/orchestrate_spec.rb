@@ -53,17 +53,24 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     end
 
     it "raises an error when user does not have sufficient privileges" do
-      allow(PG::Connection).to receive(:new).and_return(double('PG::Connection', exec: true))
-      allow(described_class).to receive(:db_user).and_return("money_penny")
+      # Use a limited user for this test case
+      restricted_user = "no_sup"
+      restricted_user_connection_url = connection_url(restricted_user)
+
+      described_class.create_publication(
+        group_name: "cluster1",
+        conn_string: connection_url,
+      )
 
       expect do
         described_class.drop_publication(
           group_name: "cluster1",
-          conn_string: connection_url,
+          conn_string: restricted_user_connection_url,
         )
       end.to raise_error(RuntimeError) { |e|
         expect(e.message).to include("Unable to drop publication")
       }
+      expect(pg_publications(connection_url: connection_url)).not_to eq([])
     end
   end
 
@@ -225,17 +232,25 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     end
 
     it "raises an error when user does not have sufficient privileges" do
-      allow(PG::Connection).to receive(:new).and_return(double('PG::Connection', exec: true))
-      allow(described_class).to receive(:db_user).and_return("money_penny")
+      # Use a limited user for this test case
+      restricted_user = "no_sup"
+      restricted_user_target_connection_url = target_connection_url(restricted_user)
+
+      described_class.create_subscription(
+        group_name: "cluster1",
+        source_conn_string: docker_compose_source_connection_url,
+        target_conn_string: target_connection_url,
+      )
 
       expect do
         described_class.drop_subscription(
           group_name: "cluster1",
-          target_conn_string: target_connection_url,
+          target_conn_string: restricted_user_target_connection_url,
         )
       end.to raise_error(RuntimeError) { |e|
         expect(e.message).to include("Unable to drop subscription")
       }
+      expect(pg_subscriptions(connection_url: target_connection_url)).not_to eq([])
     end
   end
 
