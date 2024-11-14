@@ -158,6 +158,7 @@ module PgEasyReplicate
 
       logger.info("Setting up groups tables")
       Group.setup
+      logger.info("Bootstrap completed successfully")
     rescue => e
       abort_with("Unable to bootstrap: #{e.message}")
     end
