@@ -60,6 +60,7 @@ module PgEasyReplicate
             schema: schema_name,
           )
         end
+        logger.info("Starting sync completed successfully")
       rescue => e
         stop_sync(group_name: options[:group_name])
         if Group.find(options[:group_name])
@@ -192,6 +193,7 @@ module PgEasyReplicate
           group_name: group_name,
           target_conn_string: target_conn_string || target_db_url,
         )
+        logger.info("Stopping sync completed successfully")
       rescue => e
         abort_with("Unable to stop sync: #{e.message}")
       end
