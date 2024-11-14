@@ -166,6 +166,7 @@ module PgEasyReplicate
         Query.run(
           query: "DROP SUBSCRIPTION IF EXISTS #{subscription_name(group_name)}",
           connection_url: target_conn_string,
+          user: db_user(target_conn_string),
           transaction: false,
         )
       rescue => e
