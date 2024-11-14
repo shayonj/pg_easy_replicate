@@ -51,6 +51,20 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       expect(pg_publications(connection_url: connection_url)).to eq([])
     end
+
+    it "raises an error when user does not have sufficient privileges" do
+      allow(PG::Connection).to receive(:new).and_return(double('PG::Connection', exec: true))
+      allow(described_class).to receive(:db_user).and_return("money_penny")
+
+      expect do
+        described_class.drop_publication(
+          group_name: "cluster1",
+          conn_string: connection_url,
+        )
+      end.to raise_error(RuntimeError) { |e|
+        expect(e.message).to include("Unable to drop publication")
+      }
+    end
   end
 
   describe ".add_tables_to_publication" do
@@ -190,18 +204,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
   describe ".drop_subscription" do
     before do
       PgEasyReplicate.bootstrap({ group_name: "cluster1" })
-
-      described_class.create_publication(
-        group_name: "cluster1",
-        conn_string: connection_url,
-      )
     end
 
     after do
-      described_class.drop_publication(
-        group_name: "cluster1",
-        conn_string: connection_url,
-      )
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
     end
 
@@ -217,6 +222,20 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       )
 
       expect(pg_subscriptions(connection_url: target_connection_url)).to eq([])
+    end
+
+    it "raises an error when user does not have sufficient privileges" do
+      allow(PG::Connection).to receive(:new).and_return(double('PG::Connection', exec: true))
+      allow(described_class).to receive(:db_user).and_return("money_penny")
+
+      expect do
+        described_class.drop_subscription(
+          group_name: "cluster1",
+          target_conn_string: target_connection_url,
+        )
+      end.to raise_error(RuntimeError) { |e|
+        expect(e.message).to include("Unable to drop subscription")
+      }
     end
   end
 
