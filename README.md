@@ -191,7 +191,7 @@ $ pg_easy_replicate start_sync --group-name database-cluster-1 [-d <track-ddl>]
 
 ### DDL Changes Management
 
-`pg_easy_replicate` now supports tracking and applying DDL (Data Definition Language) changes between the source and target databases. To track DDLs you can pass `-track-ddl` to `start_sync`.
+`pg_easy_replicate` now supports tracking and applying DDL (Data Definition Language) changes between the source and target databases. To track DDLs you can pass `--track-ddl` to `start_sync`.
 
 This feature ensures that most schema changes made to the source database tables that are being replicated during the replication process are tracked, so that you can apply them at your will before or after switchover.
 
@@ -310,12 +310,12 @@ By default all tables are added for replication but you can create multiple grou
 ```bash
 
 $ pg_easy_replicate bootstrap --group-name database-cluster-1 --copy-schema
-$ pg_easy_replicate start_sync --group-name database-cluster-1 --schema-name public --tables "users, posts, events"
+$ pg_easy_replicate start_sync --group-name database-cluster-1 --schema-name public --tables "users,posts,events"
 
 ...
 
 $ pg_easy_replicate bootstrap --group-name database-cluster-2 --copy-schema
-$ pg_easy_replicate start_sync --group-name database-cluster-2 --schema-name public --tables "comments, views"
+$ pg_easy_replicate start_sync --group-name database-cluster-2 --schema-name public --tables "comments,views"
 
 ...
 $ pg_easy_replicate switchover  --group-name database-cluster-1
