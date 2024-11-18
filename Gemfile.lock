@@ -27,7 +27,7 @@ GEM
       tilt
     json (2.7.2)
     language_server-protocol (3.17.0.3)
-    method_source (1.0.0)
+    method_source (1.1.0)
     oj (3.14.3)
     ougai (2.0.0)
       oj (~> 3.10)
@@ -39,7 +39,7 @@ GEM
     pg_query (5.1.0)
       google-protobuf (>= 3.22.3)
     prettier_print (1.2.1)
-    pry (0.14.2)
+    pry (0.15.0)
       coderay (~> 1.1)
       method_source (~> 1.0)
     racc (1.8.1)
