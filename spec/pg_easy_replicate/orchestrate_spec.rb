@@ -209,9 +209,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
   end
 
   describe ".drop_subscription" do
-    before do
-      PgEasyReplicate.bootstrap({ group_name: "cluster1" })
-    end
+    before { PgEasyReplicate.bootstrap({ group_name: "cluster1" }) }
 
     after do
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
@@ -234,7 +232,8 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     it "raises an error when user does not have sufficient privileges" do
       # Use a limited user for this test case
       restricted_user = "no_sup"
-      restricted_user_target_connection_url = target_connection_url(restricted_user)
+      restricted_user_target_connection_url =
+        target_connection_url(restricted_user)
 
       described_class.create_subscription(
         group_name: "cluster1",
@@ -250,7 +249,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       end.to raise_error(RuntimeError) { |e|
         expect(e.message).to include("Unable to drop subscription")
       }
-      expect(pg_subscriptions(connection_url: target_connection_url)).not_to eq([])
+      expect(pg_subscriptions(connection_url: target_connection_url)).not_to eq(
+        [],
+      )
     end
   end
 
@@ -702,6 +703,62 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         },
         { last_analyze: nil, last_vacuum: nil, relname: "sellers" },
         { last_analyze: nil, last_vacuum: nil, relname: "spatial_ref_sys" },
+      )
+    end
+
+    it "does not mark switchover complete if subscription drop fails" do
+      conn1 =
+        PgEasyReplicate::Query.connect(
+          connection_url: connection_url,
+          schema: test_schema,
+        )
+      conn1[:items].insert(name: "Foo1")
+      expect(conn1[:items].first[:name]).to eq("Foo1")
+
+      conn2 =
+        PgEasyReplicate::Query.connect(
+          connection_url: target_connection_url,
+          schema: test_schema,
+        )
+      expect(conn2[:items].first).to be_nil
+
+      ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
+      described_class.start_sync(
+        group_name: "cluster1",
+        schema_name: test_schema,
+        recreate_indices_post_copy: true,
+      )
+
+      allow(described_class).to receive(:drop_subscription).and_raise(
+        "Subscription drop failed",
+      )
+
+      expect do
+        described_class.switchover(
+          group_name: "cluster1",
+          source_conn_string: connection_url,
+          target_conn_string: target_connection_url,
+          skip_vacuum_analyze: true,
+        )
+      end.to raise_error("Switchover failed: Subscription drop failed")
+
+      described_class.restore_connections_on_source_db("cluster1")
+
+      expect(PgEasyReplicate::Group.find("cluster1")).to include(
+        switchover_completed_at: nil,
+      )
+
+      RSpec::Mocks.space.proxy_for(described_class).reset
+
+      described_class.switchover(
+        group_name: "cluster1",
+        source_conn_string: connection_url,
+        target_conn_string: target_connection_url,
+        skip_vacuum_analyze: true,
+      )
+      described_class.restore_connections_on_source_db("cluster1")
+      expect(PgEasyReplicate::Group.find("cluster1")).to include(
+        switchover_completed_at: kind_of(Time),
       )
     end
   end
