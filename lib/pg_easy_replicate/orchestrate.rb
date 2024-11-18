@@ -239,6 +239,11 @@ module PgEasyReplicate
         revoke_connections_on_source_db(group_name)
         wait_for_remaining_catchup(group_name)
         refresh_sequences(conn_string: target_conn, schema: group[:schema_name])
+
+        drop_subscription(
+          group_name: group_name,
+          target_conn_string: target_conn,
+        )
         mark_switchover_complete(group_name)
 
         unless skip_vacuum_analyze
@@ -248,11 +253,6 @@ module PgEasyReplicate
             schema: group[:schema_name],
           )
         end
-
-        drop_subscription(
-          group_name: group_name,
-          target_conn_string: target_conn,
-        )
       rescue => e
         restore_connections_on_source_db(group_name)
         abort_with("Switchover failed: #{e.message}")
