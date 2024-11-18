@@ -51,6 +51,27 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
 
       expect(pg_publications(connection_url: connection_url)).to eq([])
     end
+
+    it "raises an error when user does not have sufficient privileges" do
+      # Use a limited user for this test case
+      restricted_user = "no_sup"
+      restricted_user_connection_url = connection_url(restricted_user)
+
+      described_class.create_publication(
+        group_name: "cluster1",
+        conn_string: connection_url,
+      )
+
+      expect do
+        described_class.drop_publication(
+          group_name: "cluster1",
+          conn_string: restricted_user_connection_url,
+        )
+      end.to raise_error(RuntimeError) { |e|
+        expect(e.message).to include("Unable to drop publication")
+      }
+      expect(pg_publications(connection_url: connection_url)).not_to eq([])
+    end
   end
 
   describe ".add_tables_to_publication" do
@@ -190,18 +211,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
   describe ".drop_subscription" do
     before do
       PgEasyReplicate.bootstrap({ group_name: "cluster1" })
-
-      described_class.create_publication(
-        group_name: "cluster1",
-        conn_string: connection_url,
-      )
     end
 
     after do
-      described_class.drop_publication(
-        group_name: "cluster1",
-        conn_string: connection_url,
-      )
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
     end
 
@@ -217,6 +229,28 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       )
 
       expect(pg_subscriptions(connection_url: target_connection_url)).to eq([])
+    end
+
+    it "raises an error when user does not have sufficient privileges" do
+      # Use a limited user for this test case
+      restricted_user = "no_sup"
+      restricted_user_target_connection_url = target_connection_url(restricted_user)
+
+      described_class.create_subscription(
+        group_name: "cluster1",
+        source_conn_string: docker_compose_source_connection_url,
+        target_conn_string: target_connection_url,
+      )
+
+      expect do
+        described_class.drop_subscription(
+          group_name: "cluster1",
+          target_conn_string: restricted_user_target_connection_url,
+        )
+      end.to raise_error(RuntimeError) { |e|
+        expect(e.message).to include("Unable to drop subscription")
+      }
+      expect(pg_subscriptions(connection_url: target_connection_url)).not_to eq([])
     end
   end
 
