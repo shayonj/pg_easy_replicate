@@ -75,7 +75,7 @@ module PgEasyReplicate
 
     def determine_tables(conn_string:, list: "", exclude_list: "", schema: nil)
       schema ||= "public"
-      
+
       tables = convert_to_array(list)
       exclude_tables = convert_to_array(exclude_list)
       validate_table_lists(tables, exclude_tables, schema)
@@ -115,14 +115,25 @@ module PgEasyReplicate
       exclude_table_list = convert_to_array(exclude_tables)
 
       if !table_list.empty? && !exclude_table_list.empty?
-        abort_with("Options --tables(-t) and --exclude-tables(-e) cannot be used together.")
+        abort_with(
+          "Options --tables(-t) and --exclude-tables(-e) cannot be used together.",
+        )
       elsif !table_list.empty?
         if table_list.size > 0 && (schema_name.nil? || schema_name == "")
           abort_with("Schema name is required if tables are passed")
         end
-      elsif exclude_table_list.size > 0 && (schema_name.nil? || schema_name == "")
+      elsif exclude_table_list.size > 0 &&
+            (schema_name.nil? || schema_name == "")
         abort_with("Schema name is required if exclude tables are passed")
       end
+    end
+
+    def restore_connections_on_source_db
+      logger.info("Restoring connections")
+
+      alter_sql =
+        "ALTER USER #{quote_ident(db_user(source_db_url))} set default_transaction_read_only = false"
+      Query.run(query: alter_sql, connection_url: source_db_url)
     end
   end
 end

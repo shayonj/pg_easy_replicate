@@ -520,7 +520,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       )
 
       # restore connection so cleanup can happen
-      described_class.restore_connections_on_source_db("cluster1")
+      described_class.restore_connections_on_source_db
 
       expect(
         vacuum_stats(url: target_connection_url, schema: test_schema),
@@ -577,7 +577,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       )
 
       # restore connection so cleanup can happen
-      described_class.restore_connections_on_source_db("cluster1")
+      described_class.restore_connections_on_source_db
 
       expect(
         vacuum_stats(url: target_connection_url, schema: test_schema),
@@ -691,7 +691,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       )
 
       # restore connection so cleanup can happen
-      described_class.restore_connections_on_source_db("cluster1")
+      described_class.restore_connections_on_source_db
 
       expect(
         vacuum_stats(url: target_connection_url, schema: test_schema),
@@ -742,7 +742,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         )
       end.to raise_error("Switchover failed: Subscription drop failed")
 
-      described_class.restore_connections_on_source_db("cluster1")
+      described_class.restore_connections_on_source_db
 
       expect(PgEasyReplicate::Group.find("cluster1")).to include(
         switchover_completed_at: nil,
@@ -756,7 +756,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         target_conn_string: target_connection_url,
         skip_vacuum_analyze: true,
       )
-      described_class.restore_connections_on_source_db("cluster1")
+      described_class.restore_connections_on_source_db
       expect(PgEasyReplicate::Group.find("cluster1")).to include(
         switchover_completed_at: kind_of(Time),
       )
@@ -879,7 +879,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       # )
 
       # # restore connection so cleanup can happen
-      # described_class.restore_connections_on_source_db("cluster1")
+      # described_class.restore_connections_on_source_db
     end
   end
 

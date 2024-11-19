@@ -213,6 +213,11 @@ module PgEasyReplicate
             end
           end
         end,
+        -> do
+          if options[:restore_connection_on_source_db]
+            restore_connections_on_source_db
+          end
+        end,
       ]
 
       cleanup_steps.each do |step|
