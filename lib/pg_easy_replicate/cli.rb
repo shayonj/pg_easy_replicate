@@ -78,6 +78,11 @@ module PgEasyReplicate
                   aliases: "-s",
                   desc:
                     "Cleans up the publication and subscription for the respective group"
+    method_option :restore_connection_on_source_db,
+                  aliases: "-r",
+                  type: :boolean,
+                  default: false,
+                  desc: "Restore connection on source db after switchover"
     def cleanup
       PgEasyReplicate.cleanup(options)
     end
@@ -163,14 +168,34 @@ module PgEasyReplicate
       end
     end
 
-    desc "notify", "Sends a notification with replication status to a specified url"
-    method_option :group_name, aliases: "-g", required: true, desc: "Name of the group previously provisioned"
-    method_option :url, aliases: "-u", required: true, desc: "URL for notification"
-    method_option :frequency, aliases: "-f", type: :numeric, default: 10, desc: "Frequency for sending stats to the endpoint provided"
-    method_option :timeout, aliases: "-t", type: :numeric, default: 10, desc: "Timeout for the notify request"
+    desc "notify",
+         "Sends a notification with replication status to a specified url"
+    method_option :group_name,
+                  aliases: "-g",
+                  required: true,
+                  desc: "Name of the group previously provisioned"
+    method_option :url,
+                  aliases: "-u",
+                  required: true,
+                  desc: "URL for notification"
+    method_option :frequency,
+                  aliases: "-f",
+                  type: :numeric,
+                  default: 10,
+                  desc: "Frequency for sending stats to the endpoint provided"
+    method_option :timeout,
+                  aliases: "-t",
+                  type: :numeric,
+                  default: 10,
+                  desc: "Timeout for the notify request"
 
     def notify
-      PgEasyReplicate::Stats.notify(options[:group_name], options[:url], options[:frequency], options[:timeout])
+      PgEasyReplicate::Stats.notify(
+        options[:group_name],
+        options[:url],
+        options[:frequency],
+        options[:timeout],
+      )
     end
 
     desc "list_ddl_changes", "Lists recent DDL changes in the source database"

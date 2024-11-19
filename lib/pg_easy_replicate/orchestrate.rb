@@ -254,7 +254,7 @@ module PgEasyReplicate
           )
         end
       rescue => e
-        restore_connections_on_source_db(group_name)
+        restore_connections_on_source_db
         abort_with("Switchover failed: #{e.message}")
       end
 
@@ -312,14 +312,6 @@ module PgEasyReplicate
         Query.run(query: kill_sql, connection_url: source_db_url)
       rescue => e
         raise "Unable to revoke connections on source db: #{e.message}"
-      end
-
-      def restore_connections_on_source_db(group_name)
-        logger.info("Restoring connections")
-
-        alter_sql =
-          "ALTER USER #{quote_ident(db_user(source_db_url))} set default_transaction_read_only = false"
-        Query.run(query: alter_sql, connection_url: source_db_url)
       end
 
       def refresh_sequences(conn_string:, schema: nil)
