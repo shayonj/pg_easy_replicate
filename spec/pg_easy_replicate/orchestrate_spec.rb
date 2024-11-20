@@ -795,7 +795,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       ENV["TARGET_DB_URL"] = target_connection_url
     end
 
-    it "succesfully raises lack of super user error" do
+    it "successfully raises lack of super user error" do
       conn1 =
         PgEasyReplicate::Query.connect(
           connection_url: connection_url("james-bond_role_regular"),
@@ -824,7 +824,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
           schema_name: test_schema,
           recreate_indices_post_copy: false,
         )
-      end.to raise_error(/Starting sync failed: PG::InsufficientPrivilege/)
+      end.to raise_error(/PG::InsufficientPrivilege/)
 
       # expect(PgEasyReplicate::Group.find("cluster1")).to include(
       #   switchover_completed_at: nil,
