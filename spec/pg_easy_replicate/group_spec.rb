@@ -118,6 +118,19 @@ RSpec.describe(PgEasyReplicate::Group) do
           schema: PgEasyReplicate.internal_schema_name,
         )
       expect(r.first[:name]).to eq("test")
+      expect(r.first[:recreate_indices_post_copy]).to be_nil
+    end
+
+    it "adds a row with recreate_indices_post_copy" do
+      described_class.create({ name: "test", recreate_indices_post_copy: true })
+
+      r =
+        PgEasyReplicate::Query.run(
+          query: "select * from groups",
+          connection_url: connection_url,
+          schema: PgEasyReplicate.internal_schema_name,
+        )
+      expect(r.first[:recreate_indices_post_copy]).to be(true)
     end
 
     it "adds a row with table names and schema" do
