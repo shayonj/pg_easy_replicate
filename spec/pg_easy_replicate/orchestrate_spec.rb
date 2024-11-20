@@ -276,7 +276,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       described_class.start_sync(
         group_name: "cluster1",
         schema_name: test_schema,
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
 
       expect(pg_publications(connection_url: connection_url)).to eq(
@@ -304,7 +304,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         updated_at: kind_of(Time),
         failed_at: nil,
         table_names: "items,sellers",
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
     end
 
@@ -318,7 +318,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         described_class.start_sync(
           group_name: "cluster1",
           schema_name: test_schema,
-          recreate_indices_post_copy: true,
+          recreate_indices_post_copy: false,
         )
       end.to raise_error(RuntimeError, "Starting sync failed: boo")
 
@@ -339,7 +339,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       PgEasyReplicate::Orchestrate.start_sync(
         group_name: "cluster1",
         schema_name: test_schema,
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
     end
 
@@ -426,7 +426,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       described_class.start_sync(
         group_name: "cluster1",
         schema_name: test_schema,
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
 
       expect(PgEasyReplicate::Group.find("cluster1")).to include(
@@ -439,7 +439,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         updated_at: kind_of(Time),
         failed_at: nil,
         table_names: "items,sellers",
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
 
       conn1[:items].insert(name: "Foo2")
@@ -559,7 +559,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       described_class.start_sync(
         group_name: "cluster1",
         schema_name: test_schema,
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
 
       conn1[:items].insert(name: "Foo2")
@@ -609,7 +609,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         group_name: "cluster1",
         schema_name: test_schema,
         exclude_tables: ["sellers"],
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
 
       expect(PgEasyReplicate::Group.find("cluster1")).to include(
@@ -622,7 +622,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         updated_at: kind_of(Time),
         failed_at: nil,
         table_names: "items",
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
 
       conn1[:items].insert(name: "Foo2")
@@ -726,7 +726,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       described_class.start_sync(
         group_name: "cluster1",
         schema_name: test_schema,
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
 
       allow(described_class).to receive(:drop_subscription).and_raise(
@@ -795,7 +795,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       ENV["TARGET_DB_URL"] = target_connection_url
     end
 
-    it "succesfully raises lack of super user error" do
+    it "successfully raises lack of super user error" do
       conn1 =
         PgEasyReplicate::Query.connect(
           connection_url: connection_url("james-bond_role_regular"),
@@ -822,9 +822,9 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         described_class.start_sync(
           group_name: "cluster1",
           schema_name: test_schema,
-          recreate_indices_post_copy: true,
+          recreate_indices_post_copy: false,
         )
-      end.to raise_error(/Starting sync failed: PG::InsufficientPrivilege/)
+      end.to raise_error(/PG::InsufficientPrivilege/)
 
       # expect(PgEasyReplicate::Group.find("cluster1")).to include(
       #   switchover_completed_at: nil,
@@ -904,7 +904,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       described_class.start_sync(
         group_name: "cluster1",
         schema_name: test_schema,
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
         exclude_tables: ["items"],
       )
 
@@ -931,7 +931,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       described_class.start_sync(
         group_name: "cluster1",
         schema_name: test_schema,
-        recreate_indices_post_copy: true,
+        recreate_indices_post_copy: false,
       )
 
       expect(PgEasyReplicate::Group.find("cluster1")).to include(

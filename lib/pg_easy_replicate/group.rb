@@ -20,7 +20,7 @@ module PgEasyReplicate
           column(:updated_at, Time, default: Sequel::CURRENT_TIMESTAMP)
           column(:started_at, Time)
           column(:failed_at, Time)
-          column(:recreate_indices_post_copy, TrueClass, default: true)
+          column(:recreate_indices_post_copy, TrueClass, default: false)
           column(:switchover_completed_at, Time)
         end
       ensure
@@ -44,6 +44,7 @@ module PgEasyReplicate
           schema_name: options[:schema_name],
           started_at: options[:started_at],
           failed_at: options[:failed_at],
+          recreate_indices_post_copy: options[:recreate_indices_post_copy],
         )
       rescue => e
         abort_with("Adding group entry failed: #{e.message}")
