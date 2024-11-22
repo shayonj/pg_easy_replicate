@@ -170,6 +170,11 @@ module PgEasyReplicate
           Group.drop
         end,
         -> do
+          if options[:restore_connection_on_source_db]
+            restore_connections_on_source_db
+          end
+        end,
+        -> do
           if options[:everything]
             logger.info("Dropping schema")
             drop_internal_schema
@@ -211,11 +216,6 @@ module PgEasyReplicate
                 group_name: options[:group_name],
               )
             end
-          end
-        end,
-        -> do
-          if options[:restore_connection_on_source_db]
-            restore_connections_on_source_db
           end
         end,
       ]
