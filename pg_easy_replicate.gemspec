@@ -41,7 +41,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency("ougai", "~> 2.0.0")
   spec.add_runtime_dependency("pg", "~> 1.5.3")
   spec.add_runtime_dependency("pg_query", "~> 5.1.0")
-  spec.add_runtime_dependency("sequel", ">= 5.69", "< 5.87")
+  spec.add_runtime_dependency("sequel", ">= 5.69", "< 5.88")
   spec.add_runtime_dependency("thor", ">= 1.2.2", "< 1.4.0")
 
   # rubocop:disable Gemspec/DevelopmentDependencies
