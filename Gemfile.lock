@@ -39,7 +39,7 @@ GEM
     pg_query (5.1.0)
       google-protobuf (>= 3.22.3)
     prettier_print (1.2.1)
-    pry (0.15.0)
+    pry (0.15.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
     racc (1.8.1)
