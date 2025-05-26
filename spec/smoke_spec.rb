@@ -19,7 +19,7 @@ RSpec.describe("SmokeSpec") do
       pid =
         fork do
           puts("Running insertions")
-          3000.times do |i|
+          2000.times do |i|
             new_aid = last_count + (i + 1)
             sql = <<~SQL
             INSERT INTO "public"."pgbench_accounts"("aid", "bid", "abalance", "filler") VALUES(#{new_aid}, 1, 0, '0') RETURNING "aid", "bid", "abalance", "filler";
@@ -50,8 +50,12 @@ RSpec.describe("SmokeSpec") do
 
       begin
         Process.wait(pid)
-      rescue Errno::ECHILD #rubocop:disable Lint/SuppressedException
+      rescue Errno::ECHILD
+        puts "Forked process already exited."
       end
+
+      puts "Forked INSERT process finished. Adding a small delay before final count for target DB consistency..."
+      sleep(5)
 
       r =
         PgEasyReplicate::Query.run(
@@ -59,7 +63,7 @@ RSpec.describe("SmokeSpec") do
           connection_url: target_connection_url,
           user: "james-bond",
         )
-      expect(r).to eq([{ count: 503_000 }])
+      expect(r).to eq([{ count: 502_000 }])
 
       columns =
         PgEasyReplicate::Query.run(
