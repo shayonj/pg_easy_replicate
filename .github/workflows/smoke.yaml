@@ -86,10 +86,16 @@ jobs:
 
           echo "Optimizing source DB instance (port 5432) for maintenance tasks..."
           sudo -u postgres psql -p 5432 -d postgres -c "ALTER SYSTEM SET maintenance_work_mem = '256MB';"
+          sudo -u postgres psql -p 5432 -d postgres -c "ALTER SYSTEM SET synchronous_commit = 'on';"
+          sudo -u postgres psql -p 5432 -d postgres -c "ALTER SYSTEM SET fsync = 'on';"
+          sudo -u postgres psql -p 5432 -d postgres -c "ALTER SYSTEM SET commit_delay = 0;"
           sudo -u postgres psql -p 5432 -d postgres -c "SELECT pg_reload_conf();"
 
           echo "Optimizing target DB instance (port 5433) for maintenance tasks..."
           sudo -u postgres psql -p 5433 -d postgres -c "ALTER SYSTEM SET maintenance_work_mem = '256MB';"
+          sudo -u postgres psql -p 5433 -d postgres -c "ALTER SYSTEM SET synchronous_commit = 'on';"
+          sudo -u postgres psql -p 5433 -d postgres -c "ALTER SYSTEM SET fsync = 'on';"
+          sudo -u postgres psql -p 5433 -d postgres -c "ALTER SYSTEM SET commit_delay = 0;"
           sudo -u postgres psql -p 5433 -d postgres -c "SELECT pg_reload_conf();"
 
           # Escape the quote because we are setting the password in PG
@@ -117,6 +123,18 @@ jobs:
 
           psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'show wal_level;'
           psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'show wal_level;'
+
+          echo "=== PostgreSQL Configuration Check ==="
+          echo "Source DB (5432) settings:"
+          psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'show synchronous_commit;'
+          psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'show fsync;'
+          psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'show commit_delay;'
+
+          echo "Target DB (5433) settings:"
+          psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'show synchronous_commit;'
+          psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'show fsync;'
+          psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'show commit_delay;'
+          echo "=== End Configuration Check ==="
 
       - name: Run RSpec
         env:
