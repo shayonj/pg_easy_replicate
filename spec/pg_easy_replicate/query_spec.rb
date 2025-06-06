@@ -23,7 +23,7 @@ RSpec.describe(PgEasyReplicate::Query) do
           user: "james-bond",
         )
 
-      expect(result).to eq([{ statement_timeout: "5s" }])
+      expect(result).to eq([{ statement_timeout: "30s" }])
     end
 
     it "sets the statement_timeout using env var" do

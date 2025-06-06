@@ -1,4 +1,4 @@
-require:
+plugins:
   - rubocop-rspec
   - rubocop-rake
   - rubocop-performance
@@ -211,8 +211,9 @@ RSpec/DescribeClass:
 RSpec/DescribedClass:
   Enabled: false
 
-RSpec/FilePath:
-  Enabled: false
+# RSpec/FilePath is replaced by RSpec/SpecFilePathFormat and RSpec/SpecFilePathSuffix
+# RSpec/FilePath:
+#   Enabled: false
 
 RSpec/IdenticalEqualityAssertion:
   Enabled: false
@@ -230,9 +231,6 @@ RSpec/NestedGroups:
   Enabled: false
 
 RSpec/PredicateMatcher:
-  Enabled: false
-
-RSpec/Rails/HttpStatus:
   Enabled: false
 
 RSpec/RepeatedExampleGroupDescription:

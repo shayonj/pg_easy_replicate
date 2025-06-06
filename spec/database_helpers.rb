@@ -206,7 +206,7 @@ module DatabaseHelpers
 
   def pg_publication_tables(connection_url:)
     PgEasyReplicate::Query.run(
-      query: "select * from pg_publication_tables;",
+      query: "select * from pg_publication_tables ORDER BY tablename;",
       connection_url: connection_url,
       user: "james-bond",
     )

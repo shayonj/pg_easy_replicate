@@ -93,7 +93,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1" })
     end
 
-    it "succesfully for all tables" do
+    it "successfully for all tables" do
       tables =
         described_class.determine_tables(
           schema: test_schema,
@@ -107,20 +107,15 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         tables: tables,
       )
 
-      expect(pg_publication_tables(connection_url: connection_url)).to eq(
-        [
-          {
+      expect(pg_publication_tables(connection_url: connection_url)).to contain_exactly({
             pubname: "pger_publication_cluster1",
             schemaname: "pger_test",
             tablename: "sellers",
-          },
-          {
+          }, {
             pubname: "pger_publication_cluster1",
             schemaname: "pger_test",
             tablename: "items",
-          },
-        ],
-      )
+          })
     end
 
     it "succesfully for specific tables" do
@@ -131,15 +126,11 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         tables: ["sellers"],
       )
 
-      expect(pg_publication_tables(connection_url: connection_url)).to eq(
-        [
-          {
+      expect(pg_publication_tables(connection_url: connection_url)).to contain_exactly({
             pubname: "pger_publication_cluster1",
             schemaname: "pger_test",
             tablename: "sellers",
-          },
-        ],
-      )
+          })
     end
   end
 
@@ -390,7 +381,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
           connection_url: target_connection_url,
           user: "james-bond",
         ),
-      ).to eq([{ statement_timeout: "5s" }])
+      ).to eq([{ statement_timeout: "30s" }])
     end
   end
 

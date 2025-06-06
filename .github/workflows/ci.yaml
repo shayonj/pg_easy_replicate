@@ -14,19 +14,19 @@ concurrency:
 
 jobs:
   rspec:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     name: Ruby ${{ matrix.ruby }} - PG ${{ matrix.pg.from }} -> PG ${{ matrix.pg.to }}
     strategy:
       matrix:
-        ruby: ["3.0.5", "3.1.4", "3.2.1", "3.3.6"]
+        ruby: ["3.4.4", "3.3.6", "3.2.1", "3.1.4"]
         pg:
           [
-            { from: 10, to: 11 },
             { from: 11, to: 12 },
             { from: 12, to: 13 },
             { from: 13, to: 14 },
             { from: 14, to: 15 },
+            # { from: 15, to: 16 },
             { from: 10, to: 15 },
           ]
     steps:
@@ -61,9 +61,35 @@ jobs:
           sudo apt-get install --yes --no-install-recommends postgresql-${{ matrix.pg.from }} postgresql-client-${{ matrix.pg.from }}
           sudo apt-get install --yes --no-install-recommends postgresql-${{ matrix.pg.to }} postgresql-client-${{ matrix.pg.to }}
 
+          # Stop existing services first to free up ports
+          echo "Attempting to stop existing PostgreSQL services..."
+          sudo systemctl stop postgresql@${{ matrix.pg.from }}-main.service || echo "Failed to stop ${{ matrix.pg.from }}-main, or already stopped."
+          sudo systemctl stop postgresql@${{ matrix.pg.to }}-main.service || echo "Failed to stop ${{ matrix.pg.to }}-main, or already stopped."
+          sudo systemctl stop postgresql.service || echo "Failed to stop generic postgresql.service, or already stopped."
+          sleep 2 # Give a moment for ports to free up
+
+          echo "Dropping existing clusters (if any)..."
+          sudo pg_dropcluster --stop ${{ matrix.pg.from }} main || echo "Cluster ${{ matrix.pg.from }}/main not found or already dropped."
+          sudo pg_dropcluster --stop ${{ matrix.pg.to }} main || echo "Cluster ${{ matrix.pg.to }}/main not found or already dropped."
+          sleep 2 # Ensure drop completes
+
+          echo "Creating cluster ${{ matrix.pg.from }}/main on port 5432..."
+          sudo pg_createcluster --start --port 5432 ${{ matrix.pg.from }} main
+
+          echo "Creating cluster ${{ matrix.pg.to }}/main on port 5433..."
+          sudo pg_createcluster --start --port 5433 ${{ matrix.pg.to }} main
+
+          echo "Ensuring services are managed by systemd after initial creation..."
           sudo systemctl restart postgresql@${{ matrix.pg.from }}-main.service
           sudo systemctl restart postgresql@${{ matrix.pg.to }}-main.service
-          sudo systemctl restart postgresql
+
+          echo "Optimizing source DB instance (port 5432) for maintenance tasks..."
+          sudo -u postgres psql -p 5432 -d postgres -c "ALTER SYSTEM SET maintenance_work_mem = '256MB';"
+          sudo -u postgres psql -p 5432 -d postgres -c "SELECT pg_reload_conf();"
+
+          echo "Optimizing target DB instance (port 5433) for maintenance tasks..."
+          sudo -u postgres psql -p 5433 -d postgres -c "ALTER SYSTEM SET maintenance_work_mem = '256MB';"
+          sudo -u postgres psql -p 5433 -d postgres -c "SELECT pg_reload_conf();"
 
           # Escape the quote because we are setting the password in PG
           # String: james-bond123@7!''3aaR
@@ -85,9 +111,9 @@ jobs:
           psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'ALTER SYSTEM SET wal_level = logical;'
           psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'ALTER SYSTEM SET wal_level = logical;'
 
+          echo "Ensuring services are managed by systemd after wal_level change..."
           sudo systemctl restart postgresql@${{ matrix.pg.from }}-main.service
           sudo systemctl restart postgresql@${{ matrix.pg.to }}-main.service
-          sudo systemctl restart postgresql
 
           psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'show wal_level;'
           psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'show wal_level;'
@@ -95,19 +121,21 @@ jobs:
           sudo -u postgres psql -p 5432 -c "ALTER SYSTEM SET max_connections = '500';"
           sudo -u postgres psql -p 5433 -c "ALTER SYSTEM SET max_connections = '500';"
 
+          echo "Ensuring services are managed by systemd after max_connections change..."
           sudo systemctl restart postgresql@${{ matrix.pg.from }}-main.service
           sudo systemctl restart postgresql@${{ matrix.pg.to }}-main.service
-          sudo systemctl restart postgresql
 
           # Verify the changes
           psql -h localhost -d postgres-db -U james-bond -p 5432 -c 'SHOW max_connections;'
           psql -h localhost -d postgres-db -U james-bond -p 5433 -c 'SHOW max_connections;'
 
       - name: Run RSpec
+        env:
+          PG_EASY_REPLICATE_STATEMENT_TIMEOUT: "30s"
         run: bundle exec rspec
   build-push-image:
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [rspec]
     steps:

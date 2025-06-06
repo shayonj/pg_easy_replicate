@@ -171,18 +171,22 @@ module PgEasyReplicate
 
       def create_event_triggers(conn, group_name)
         sanitized_group_name = sanitize_identifier(group_name)
+
+        pg_version = conn.fetch("SHOW server_version_num").first[:server_version_num].to_i
+        execute_keyword = pg_version >= 110000 ? "FUNCTION" : "PROCEDURE"
+
         conn.run(<<~SQL)
           DROP EVENT TRIGGER IF EXISTS pger_ddl_trigger_#{sanitized_group_name};
           CREATE EVENT TRIGGER pger_ddl_trigger_#{sanitized_group_name} ON ddl_command_end
-          EXECUTE FUNCTION #{internal_schema_name}.pger_ddl_trigger_#{sanitized_group_name}();
+          EXECUTE #{execute_keyword} #{internal_schema_name}.pger_ddl_trigger_#{sanitized_group_name}();
 
           DROP EVENT TRIGGER IF EXISTS pger_drop_trigger_#{sanitized_group_name};
           CREATE EVENT TRIGGER pger_drop_trigger_#{sanitized_group_name} ON sql_drop
-          EXECUTE FUNCTION #{internal_schema_name}.pger_ddl_trigger_#{sanitized_group_name}();
+          EXECUTE #{execute_keyword} #{internal_schema_name}.pger_ddl_trigger_#{sanitized_group_name}();
 
           DROP EVENT TRIGGER IF EXISTS pger_table_rewrite_trigger_#{sanitized_group_name};
           CREATE EVENT TRIGGER pger_table_rewrite_trigger_#{sanitized_group_name} ON table_rewrite
-          EXECUTE FUNCTION #{internal_schema_name}.pger_ddl_trigger_#{sanitized_group_name}();
+          EXECUTE #{execute_keyword} #{internal_schema_name}.pger_ddl_trigger_#{sanitized_group_name}();
         SQL
       rescue => e
         abort_with("Creating event triggers failed: #{e.message}")
