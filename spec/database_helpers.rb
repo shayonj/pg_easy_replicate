@@ -53,10 +53,11 @@ module DatabaseHelpers
         user: "james-bond",
       )
 
-      # setup user with role
+      # setup user with role (with ADMIN option for PostgreSQL 16+ compatibility)
       sql = <<~SQL
         drop role if exists #{PG::Connection.quote_ident("james-bond_role_regular")};
-        create role #{PG::Connection.quote_ident("james-bond_role_regular")} WITH createrole createdb replication LOGIN PASSWORD 'james-bond123@7!''3aaR'; grant #{PG::Connection.quote_ident("james-bond_super_role")} to #{PG::Connection.quote_ident("james-bond_role_regular")};
+        create role #{PG::Connection.quote_ident("james-bond_role_regular")} WITH createrole createdb replication LOGIN PASSWORD 'james-bond123@7!''3aaR';
+        grant #{PG::Connection.quote_ident("james-bond_super_role")} to #{PG::Connection.quote_ident("james-bond_role_regular")} WITH ADMIN OPTION;
         grant all privileges on database #{PG::Connection.quote_ident("postgres-db")} TO #{PG::Connection.quote_ident("james-bond_role_regular")};
       SQL
       PgEasyReplicate::Query.run(
@@ -206,7 +207,7 @@ module DatabaseHelpers
 
   def pg_publication_tables(connection_url:)
     PgEasyReplicate::Query.run(
-      query: "select * from pg_publication_tables ORDER BY tablename;",
+      query: "select pubname, schemaname, tablename from pg_publication_tables ORDER BY tablename;",
       connection_url: connection_url,
       user: "james-bond",
     )
