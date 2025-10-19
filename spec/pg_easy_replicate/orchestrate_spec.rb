@@ -754,8 +754,8 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     end
   end
 
-  # Note: Tests special roles that act as superuser which aren't superuser, like rds_superuser
-  # With PostgreSQL 16+ changes, this now tests successful operation with ADMIN option
+  # Note: Hard to test for special roles that act as superuser which aren't superuser, like rds_superuser
+  # So all this spec does in vanilla postgres is to raise error below.
   describe ".switchover with special user role" do
     before do
       ENV["SOURCE_DB_URL"] = connection_url("james-bond_role_regular")
@@ -786,7 +786,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       ENV["TARGET_DB_URL"] = target_connection_url
     end
 
-    it "successfully works with special user role having ADMIN option" do
+    it "successfully raises lack of super user error" do
       conn1 =
         PgEasyReplicate::Query.connect(
           connection_url: connection_url("james-bond_role_regular"),
@@ -809,68 +809,13 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
         "james-bond_super_role",
       )
 
-      # This should now succeed with proper ADMIN option
-      described_class.start_sync(
-        group_name: "cluster1",
-        schema_name: test_schema,
-        recreate_indices_post_copy: false,
-      )
-
-      expect(PgEasyReplicate::Group.find("cluster1")).to include(
-        switchover_completed_at: nil,
-        created_at: kind_of(Time),
-        name: "cluster1",
-        schema_name: "pger_test",
-        id: kind_of(Integer),
-        started_at: kind_of(Time),
-        updated_at: kind_of(Time),
-        failed_at: nil,
-        table_names: "items,sellers",
-        recreate_indices_post_copy: false,
-      )
-
-      conn1[:items].insert(name: "Foo2")
-
-      sleep 10
-
-      expect(conn1[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
-      expect(conn2[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
-
-      # Sequence check
-      expect(conn1.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
-        [{ last_value: 2 }],
-      )
-
-      # Expect sequence to not be updated on target DB
-      expect(conn2.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
-        [{ last_value: 1 }],
-      )
-
-      described_class.switchover(
-        group_name: "cluster1",
-        source_conn_string: connection_url("james-bond_role_regular"),
-        target_conn_string: target_connection_url("james-bond_role_regular"),
-      )
-
-      expect(PgEasyReplicate::Group.find("cluster1")).to include(
-        switchover_completed_at: kind_of(Time),
-        created_at: kind_of(Time),
-        name: "cluster1",
-        schema_name: "pger_test",
-        id: kind_of(Integer),
-        started_at: kind_of(Time),
-        updated_at: kind_of(Time),
-        failed_at: nil,
-        table_names: "items,sellers",
-      )
-
-      # Expect sequence to be updated on target DB
-      expect(conn2.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
-        [{ last_value: 2 }],
-      )
-
-      # restore connection so cleanup can happen
-      described_class.restore_connections_on_source_db
+      expect do
+        described_class.start_sync(
+          group_name: "cluster1",
+          schema_name: test_schema,
+          recreate_indices_post_copy: false,
+        )
+      end.to raise_error(/PG::InsufficientPrivilege/)
     end
   end
 
