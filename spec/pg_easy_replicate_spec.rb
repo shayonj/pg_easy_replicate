@@ -396,6 +396,25 @@ RSpec.describe(PgEasyReplicate) do
           [],
         )
       end
+
+      it "successfully without everything (only deletes specific group)" do
+        described_class.bootstrap({ group_name: "cluster1" })
+
+        ENV["SECONDARY_SOURCE_DB_URL"] = docker_compose_source_connection_url
+        PgEasyReplicate::Orchestrate.start_sync({ group_name: "cluster1" })
+        PgEasyReplicate::Orchestrate.start_sync({ group_name: "cluster2" })
+
+        expect(PgEasyReplicate::Group.find("cluster1")).not_to be_nil
+        expect(PgEasyReplicate::Group.find("cluster2")).not_to be_nil
+
+        described_class.cleanup({ group_name: "cluster1", sync: true })
+
+        expect(PgEasyReplicate::Group.find("cluster1")).to be_nil
+        expect(PgEasyReplicate::Group.find("cluster2")).not_to be_nil
+        expect(groups_table_exists?).not_to eq([])
+
+        described_class.cleanup({ everything: true, group_name: "cluster2" })
+      end
     end
 
     describe ".export_schema" do

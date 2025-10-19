@@ -166,8 +166,13 @@ module PgEasyReplicate
     def cleanup(options)
       cleanup_steps = [
         -> do
-          logger.info("Dropping groups table")
-          Group.drop
+          if options[:everything]
+            logger.info("Dropping groups table")
+            Group.drop
+          else
+            logger.info("Deleting group entry for #{options[:group_name]}")
+            Group.delete(options[:group_name])
+          end
         end,
         -> do
           if options[:restore_connection_on_source_db]
