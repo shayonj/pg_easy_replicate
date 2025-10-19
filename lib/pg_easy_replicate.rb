@@ -343,24 +343,6 @@ module PgEasyReplicate
       raise "Unable to check superuser conditions: #{e.message}"
     end
 
-    def has_admin_option?(conn_string:, role_name:, user: nil)
-      user ||= db_user(conn_string)
-      sql = <<~SQL
-        SELECT r.rolname AS username,
-               r1.rolname AS role_name,
-               m.admin_option
-        FROM pg_catalog.pg_roles r
-        LEFT JOIN pg_catalog.pg_auth_members m ON (m.member = r.oid)
-        LEFT JOIN pg_roles r1 ON (m.roleid = r1.oid)
-        WHERE r.rolname = '#{user}' AND r1.rolname = '#{role_name}';
-      SQL
-
-      r = Query.run(query: sql, connection_url: conn_string, user: user)
-      r.any? { |q| q[:admin_option] == true }
-    rescue => e
-      raise "Unable to check admin option: #{e.message}"
-    end
-
     def get_pg_version(conn_string:)
       sql = "SELECT version()"
       result = Query.run(query: sql, connection_url: conn_string, user: db_user(conn_string))
@@ -418,20 +400,18 @@ module PgEasyReplicate
       end
     rescue => e
       raise "Unable to create user: #{e.message}" unless special_user_role && e.message.include?("permission denied to grant role")
-        pg_version = get_pg_version(conn_string: conn_string)
-        version_info = if pg_version && pg_version >= 16
-  "PostgreSQL #{pg_version} requires"
-else
-  "PostgreSQL 16+ requires"
-end
 
-        raise "Unable to create user: #{e.message}. " \
-              "#{version_info} the user '#{db_user(conn_string)}' to have the ADMIN option on role '#{special_user_role}' to grant it to other users. " \
-              "Please ensure the user has been granted the role with ADMIN option: " \
-              "GRANT #{special_user_role} TO #{db_user(conn_string)} WITH ADMIN OPTION;"
+      pg_version = get_pg_version(conn_string: conn_string)
+      version_info = if pg_version && pg_version >= 16
+        "PostgreSQL #{pg_version} requires"
+      else
+        "PostgreSQL 16+ requires"
+      end
 
-
-
+      raise "Unable to create user: #{e.message}. " \
+            "#{version_info} the user '#{db_user(conn_string)}' to have the ADMIN option on role '#{special_user_role}' to grant it to other users. " \
+            "Please ensure the user has been granted the role with ADMIN option: " \
+            "GRANT #{special_user_role} TO #{db_user(conn_string)} WITH ADMIN OPTION;"
     end
 
     def drop_user(conn_string:, user: internal_user_name)

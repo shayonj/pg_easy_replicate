@@ -828,7 +828,7 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       [connection_url, target_connection_url].each do |url|
         PgEasyReplicate::Query.run(
           query:
-            "drop role if exists james_bond_no_admin; create role james_bond_no_admin WITH createrole createdb replication LOGIN PASSWORD 'james-bond123@7!''3aaR'; grant james-bond_super_role to james_bond_no_admin; grant all privileges on database #{PG::Connection.quote_ident("postgres-db")} TO james_bond_no_admin;",
+            "drop role if exists james_bond_no_admin; create role james_bond_no_admin WITH createrole createdb replication LOGIN PASSWORD 'james-bond123@7!''3aaR'; grant #{PG::Connection.quote_ident("james-bond_super_role")} to james_bond_no_admin; grant all privileges on database #{PG::Connection.quote_ident("postgres-db")} TO james_bond_no_admin;",
           connection_url: url,
           user: "james-bond",
         )
@@ -838,7 +838,13 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     after do
       cleanup_roles
 
+      # Clean up objects owned by the test user before dropping the role
       [connection_url, target_connection_url].each do |url|
+        PgEasyReplicate::Query.run(
+          query: "drop schema if exists pger cascade; revoke all privileges on database #{PG::Connection.quote_ident("postgres-db")} from james_bond_no_admin;",
+          connection_url: url,
+          user: "james-bond",
+        )
         PgEasyReplicate::Query.run(
           query: "drop role if exists james_bond_no_admin;",
           connection_url: url,
@@ -862,9 +868,12 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
       end.to raise_error(RuntimeError) { |e|
         expect(e.message).to include("Unable to bootstrap")
         expect(e.message).to include("Unable to create user")
-        expect(e.message).to include("must have the ADMIN option on role")
+        expect(e.message).to include("ADMIN option")
         expect(e.message).to include("GRANT james-bond_super_role TO james_bond_no_admin WITH ADMIN OPTION")
       }
+
+      # Cleanup the schema that was created during bootstrap attempt
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1_no_admin" })
 
       ENV["SOURCE_DB_URL"] = connection_url
       ENV["TARGET_DB_URL"] = target_connection_url
