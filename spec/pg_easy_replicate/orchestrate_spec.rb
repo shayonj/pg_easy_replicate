@@ -854,6 +854,13 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
     end
 
     it "fails with helpful error message for PostgreSQL 16+ when user lacks ADMIN option" do
+      source_version = PgEasyReplicate.get_pg_version(conn_string: connection_url)
+      target_version = PgEasyReplicate.get_pg_version(conn_string: target_connection_url)
+
+      if source_version < 16 && target_version < 16
+        skip "Test requires PostgreSQL 16+ on at least one database (source: #{source_version}, target: #{target_version})"
+      end
+
       ENV["SOURCE_DB_URL"] = connection_url("james_bond_no_admin")
       ENV["TARGET_DB_URL"] = target_connection_url("james_bond_no_admin")
 
