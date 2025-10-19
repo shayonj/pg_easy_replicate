@@ -5,14 +5,14 @@ PATH
       ougai (~> 2.0.0)
       pg (~> 1.5.3)
       pg_query (~> 5.1.0)
-      sequel (>= 5.69, < 5.94)
+      sequel (>= 5.69, < 5.98)
       thor (>= 1.2.2, < 1.4.0)
 
 GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
-    bigdecimal (3.2.2)
+    bigdecimal (3.2.3)
     coderay (1.1.3)
     diff-lcs (1.6.2)
     google-protobuf (4.31.0-arm64-darwin)
@@ -95,7 +95,7 @@ GEM
       lint_roller (~> 1.1)
       rubocop (~> 1.72, >= 1.72.1)
     ruby-progressbar (1.13.0)
-    sequel (5.93.0)
+    sequel (5.97.0)
       bigdecimal
     syntax_tree (6.2.0)
       prettier_print (>= 1.2.0)
