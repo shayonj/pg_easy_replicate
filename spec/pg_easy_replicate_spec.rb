@@ -416,7 +416,7 @@ RSpec.describe(PgEasyReplicate) do
         expect {
           described_class.export_schema(conn_string: "postgres://foo@bar")
         }.to raise_error(
-          /Unable to export schema: pg_dump: error: could not translate host name "bar"/,
+          /Unable to export schema:.*could not translate host name "bar"/,
         )
       end
     end

@@ -159,6 +159,11 @@ For AWS the special user role is `rds_superuser`, and for GCP it is `cloudsqlsup
 
 **Note**: The user in the connection url must be part of the special user role being supplied.
 
+**PostgreSQL 16+ Requirement**: Starting with PostgreSQL 16, if you're using `--special-user-role`, the user in your connection URL must have the `ADMIN OPTION` on that role. You can grant this with:
+```sql
+GRANT rds_superuser TO your_user WITH ADMIN OPTION;
+```
+
 #### Config Check
 
 ```bash

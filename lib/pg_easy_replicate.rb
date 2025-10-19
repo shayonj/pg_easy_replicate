@@ -343,6 +343,18 @@ module PgEasyReplicate
       raise "Unable to check superuser conditions: #{e.message}"
     end
 
+    def get_pg_version(conn_string:)
+      sql = "SELECT version()"
+      result = Query.run(query: sql, connection_url: conn_string, user: db_user(conn_string))
+      version_string = result.first[:version]
+      # Extract major version number (e.g., "PostgreSQL 16.1..." -> 16)
+      version_match = version_string.match(/PostgreSQL (\d+)\./)
+      version_match ? version_match[1].to_i : nil
+    rescue => e
+      logger.warn("Unable to determine PostgreSQL version: #{e.message}")
+      nil
+    end
+
     def create_user(
       conn_string:,
       special_user_role: nil,
@@ -364,12 +376,11 @@ module PgEasyReplicate
         transaction: false,
       )
 
-      sql =
-        if special_user_role
-          "grant #{quote_ident(special_user_role)} to #{quote_ident(internal_user_name)};"
-        else
-          "alter user #{quote_ident(internal_user_name)} with superuser;"
-        end
+      sql = if special_user_role
+        "grant #{quote_ident(special_user_role)} to #{quote_ident(internal_user_name)};"
+      else
+        "alter user #{quote_ident(internal_user_name)} with superuser;"
+      end
 
       Query.run(
         query: sql,
@@ -378,16 +389,29 @@ module PgEasyReplicate
         transaction: false,
       )
 
-      return unless grant_permissions_on_schema
-      Query.run(
-        query:
-          "grant all on schema #{quote_ident(internal_schema_name)} to #{quote_ident(internal_user_name)}",
-        connection_url: conn_string,
-        user: db_user(conn_string),
-        transaction: false,
-      )
+      if grant_permissions_on_schema
+        Query.run(
+          query:
+            "grant all on schema #{quote_ident(internal_schema_name)} to #{quote_ident(internal_user_name)}",
+          connection_url: conn_string,
+          user: db_user(conn_string),
+          transaction: false,
+        )
+      end
     rescue => e
-      raise "Unable to create user: #{e.message}"
+      raise "Unable to create user: #{e.message}" unless special_user_role && e.message.include?("permission denied to grant role")
+
+      pg_version = get_pg_version(conn_string: conn_string)
+      version_info = if pg_version && pg_version >= 16
+        "PostgreSQL #{pg_version} requires"
+      else
+        "PostgreSQL 16+ requires"
+      end
+
+      raise "Unable to create user: #{e.message}. " \
+            "#{version_info} the user '#{db_user(conn_string)}' to have the ADMIN option on role '#{special_user_role}' to grant it to other users. " \
+            "Please ensure the user has been granted the role with ADMIN option: " \
+            "GRANT #{special_user_role} TO #{db_user(conn_string)} WITH ADMIN OPTION;"
     end
 
     def drop_user(conn_string:, user: internal_user_name)

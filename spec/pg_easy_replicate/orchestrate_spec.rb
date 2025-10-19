@@ -816,61 +816,74 @@ RSpec.describe(PgEasyReplicate::Orchestrate) do
           recreate_indices_post_copy: false,
         )
       end.to raise_error(/PG::InsufficientPrivilege/)
+    end
+  end
 
-      # expect(PgEasyReplicate::Group.find("cluster1")).to include(
-      #   switchover_completed_at: nil,
-      #   created_at: kind_of(Time),
-      #   name: "cluster1",
-      #   schema_name: "pger_test",
-      #   id: kind_of(Integer),
-      #   started_at: kind_of(Time),
-      #   updated_at: kind_of(Time),
-      #   failed_at: nil,
-      #   table_names: nil,
-      # )
+  # Tests PostgreSQL 16+ error handling when user lacks ADMIN option
+  describe ".bootstrap with special user role without ADMIN option" do
+    before do
+      setup_roles
 
-      # conn1[:items].insert(name: "Foo2")
+      # Create a user without ADMIN option on the special role
+      [connection_url, target_connection_url].each do |url|
+        PgEasyReplicate::Query.run(
+          query:
+            "drop role if exists james_bond_no_admin; create role james_bond_no_admin WITH createrole createdb replication LOGIN PASSWORD 'james-bond123@7!''3aaR'; grant #{PG::Connection.quote_ident("james-bond_super_role")} to james_bond_no_admin; grant all privileges on database #{PG::Connection.quote_ident("postgres-db")} TO james_bond_no_admin;",
+          connection_url: url,
+          user: "james-bond",
+        )
+      end
+    end
 
-      # sleep 10
+    after do
+      cleanup_roles
 
-      # expect(conn1[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
-      # expect(conn2[:items].map { |r| r[:name] }).to eq(%w[Foo1 Foo2])
+      # Clean up objects owned by the test user before dropping the role
+      [connection_url, target_connection_url].each do |url|
+        PgEasyReplicate::Query.run(
+          query: "drop schema if exists pger cascade; revoke all privileges on database #{PG::Connection.quote_ident("postgres-db")} from james_bond_no_admin;",
+          connection_url: url,
+          user: "james-bond",
+        )
+        PgEasyReplicate::Query.run(
+          query: "drop role if exists james_bond_no_admin;",
+          connection_url: url,
+          user: "james-bond",
+        )
+      end
+    end
 
-      # # Sequence check
-      # expect(conn1.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
-      #   [{ last_value: 2 }],
-      # )
+    it "fails with helpful error message for PostgreSQL 16+ when user lacks ADMIN option" do
+      source_version = PgEasyReplicate.get_pg_version(conn_string: connection_url)
+      target_version = PgEasyReplicate.get_pg_version(conn_string: target_connection_url)
 
-      # # Expect sequence to not be updated on target DB
-      # expect(conn2.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
-      #   [{ last_value: 1 }],
-      # )
+      if source_version < 16 && target_version < 16
+        skip "Test requires PostgreSQL 16+ on at least one database (source: #{source_version}, target: #{target_version})"
+      end
 
-      # described_class.switchover(
-      #   group_name: "cluster1",
-      #   source_conn_string: connection_url("james-bond_role_regular"),
-      #   target_conn_string: target_connection_url("james-bond_role_regular"),
-      # )
+      ENV["SOURCE_DB_URL"] = connection_url("james_bond_no_admin")
+      ENV["TARGET_DB_URL"] = target_connection_url("james_bond_no_admin")
 
-      # expect(PgEasyReplicate::Group.find("cluster1")).to include(
-      #   switchover_completed_at: kind_of(Time),
-      #   created_at: kind_of(Time),
-      #   name: "cluster1",
-      #   schema_name: "pger_test",
-      #   id: kind_of(Integer),
-      #   started_at: kind_of(Time),
-      #   updated_at: kind_of(Time),
-      #   failed_at: nil,
-      #   table_names: nil,
-      # )
+      expect do
+        PgEasyReplicate.bootstrap(
+          {
+            group_name: "cluster1_no_admin",
+            schema: test_schema,
+            special_user_role: "james-bond_super_role",
+          },
+        )
+      end.to raise_error(RuntimeError) { |e|
+        expect(e.message).to include("Unable to bootstrap")
+        expect(e.message).to include("Unable to create user")
+        expect(e.message).to include("ADMIN option")
+        expect(e.message).to include("GRANT james-bond_super_role TO james_bond_no_admin WITH ADMIN OPTION")
+      }
 
-      # # Expect sequence to be updated on target DB
-      # expect(conn2.fetch("SELECT last_value FROM items_id_seq;").to_a).to eq(
-      #   [{ last_value: 2 }],
-      # )
+      # Cleanup the schema that was created during bootstrap attempt
+      PgEasyReplicate.cleanup({ everything: true, group_name: "cluster1_no_admin" })
 
-      # # restore connection so cleanup can happen
-      # described_class.restore_connections_on_source_db
+      ENV["SOURCE_DB_URL"] = connection_url
+      ENV["TARGET_DB_URL"] = target_connection_url
     end
   end
 
