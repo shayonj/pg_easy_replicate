@@ -3,7 +3,7 @@ PATH
   specs:
     pg_easy_replicate (0.3.8)
       ougai (~> 2.0.0)
-      pg (~> 1.5.3)
+      pg (>= 1.5.3, < 1.7.0)
       pg_query (>= 5.1, < 6.2)
       sequel (>= 5.69, < 5.98)
       thor (>= 1.2.2, < 1.5.0)
@@ -40,7 +40,8 @@ GEM
     parser (3.3.8.0)
       ast (~> 2.4.1)
       racc
-    pg (1.5.9)
+    pg (1.6.2-arm64-darwin)
+    pg (1.6.2-x86_64-linux)
     pg_query (6.1.0)
       google-protobuf (>= 3.25.3)
     prettier_print (1.2.1)
