@@ -379,5 +379,5 @@ Next, you can set up a program that watches the `stats` and waits until `switcho
 PRs most welcome. You can get started locally by
 
 - `docker compose down -v && docker compose up --remove-orphans --build`
-- Install ruby `3.3.6` using RVM ([instruction](https://rvm.io/rvm/install#any-other-system))
+- Install ruby `3.4.4` using RVM ([instruction](https://rvm.io/rvm/install#any-other-system))
 - `bundle exec rspec` for specs

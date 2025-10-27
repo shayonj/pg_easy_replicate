@@ -122,7 +122,7 @@ module PgEasyReplicate
             .with_object(Hash.new(0)) do |state, counts|
               counts[state[:replication_state]] += 1
             end
-        result.keys.uniq.count == 1 &&
+        result.keys.uniq.one? &&
           result.keys.first == REPLICATION_STATE_MAP["r"]
       end
 
