@@ -25,7 +25,7 @@ GEM
       temple (>= 0.8.2)
       thor
       tilt
-    json (2.12.2)
+    json (2.15.2)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     logger (1.7.0)
@@ -37,14 +37,14 @@ GEM
     ougai (2.0.0)
       oj (~> 3.10)
     parallel (1.27.0)
-    parser (3.3.8.0)
+    parser (3.3.10.0)
       ast (~> 2.4.1)
       racc
     pg (1.5.9)
     pg_query (6.1.0)
       google-protobuf (>= 3.25.3)
     prettier_print (1.2.1)
-    prism (1.4.0)
+    prism (1.6.0)
     pry (0.15.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
@@ -53,7 +53,7 @@ GEM
     rake (13.3.0)
     rbs (3.9.4)
       logger
-    regexp_parser (2.10.0)
+    regexp_parser (2.11.3)
     rspec (3.13.2)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -78,7 +78,7 @@ GEM
       rubocop-ast (>= 1.45.0, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 4.0)
-    rubocop-ast (1.45.0)
+    rubocop-ast (1.47.1)
       parser (>= 3.3.7.2)
       prism (~> 1.4)
     rubocop-packaging (0.6.0)
@@ -91,7 +91,7 @@ GEM
     rubocop-rake (0.7.1)
       lint_roller (~> 1.1)
       rubocop (>= 1.72.1)
-    rubocop-rspec (3.6.0)
+    rubocop-rspec (3.7.0)
       lint_roller (~> 1.1)
       rubocop (~> 1.72, >= 1.72.1)
     ruby-progressbar (1.13.0)
@@ -110,9 +110,9 @@ GEM
     temple (0.10.3)
     thor (1.4.0)
     tilt (2.6.0)
-    unicode-display_width (3.1.4)
-      unicode-emoji (~> 4.0, >= 4.0.4)
-    unicode-emoji (4.0.4)
+    unicode-display_width (3.2.0)
+      unicode-emoji (~> 4.1)
+    unicode-emoji (4.1.0)
 
 PLATFORMS
   arm64-darwin-22
