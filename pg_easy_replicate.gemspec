@@ -42,7 +42,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency("ougai", "~> 2.0.0")
   spec.add_dependency("pg", ">= 1.5.3", "< 1.7.0")
   spec.add_dependency("pg_query", ">= 5.1", "< 6.2")
-  spec.add_dependency("sequel", ">= 5.69", "< 5.98")
+  spec.add_dependency("sequel", ">= 5.69", "< 5.99")
   spec.add_dependency("thor", ">= 1.2.2", "< 1.5.0")
 
   # rubocop:disable Gemspec/DevelopmentDependencies

@@ -5,7 +5,7 @@ PATH
       ougai (~> 2.0.0)
       pg (>= 1.5.3, < 1.7.0)
       pg_query (>= 5.1, < 6.2)
-      sequel (>= 5.69, < 5.98)
+      sequel (>= 5.69, < 5.99)
       thor (>= 1.2.2, < 1.5.0)
 
 GEM
@@ -96,7 +96,7 @@ GEM
       lint_roller (~> 1.1)
       rubocop (~> 1.72, >= 1.72.1)
     ruby-progressbar (1.13.0)
-    sequel (5.97.0)
+    sequel (5.98.0)
       bigdecimal
     syntax_tree (6.3.0)
       prettier_print (>= 1.2.0)
